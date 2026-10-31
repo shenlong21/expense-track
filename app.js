@@ -44,6 +44,48 @@ function parseAmount(text) {
   return paise > 0 ? paise : null;
 }
 
+// The tags offered while typing an expense. Each has its own colour, used on badges and in the charts.
+const TAGS = [
+  ["rent", "#7c5cff"], ["groceries", "#2e9e5b"], ["travel", "#1f8ef1"], ["shopping", "#e0489b"], ["food", "#f08a24"],
+];
+const tagColor = (tag) => (TAGS.find(([n]) => n === tag) || [, "#8a93a3"])[1];
+
+const isKnownTag = (tag) => TAGS.some(([n]) => n === tag);
+
+function tagBadge(tag) {
+  const b = el("span", { class: "tagbadge", text: tag });
+  b.style.setProperty("--tc", tagColor(tag));
+  return b;
+}
+
+// A row of tag badges to pick one from. Hidden until there is something typed (sync).
+function tagPicker(initial = null, onChange) {
+  let value = initial;
+  const node = el("div", { class: "tagrow", hidden: "", role: "group", "aria-label": "Tag" });
+  const buttons = TAGS.map(([name]) => {
+    const b = tagBadge(name);
+    b.className = "tagbadge pick";
+    b.setAttribute("role", "button");
+    b.tabIndex = 0;
+    b.addEventListener("mousedown", (e) => e.preventDefault());   // keep the keyboard and the text field focused
+    b.addEventListener("click", () => {
+      value = value === name ? null : name;
+      paint();
+      if (onChange) onChange(value ? [value] : []);
+    });
+    return [name, b];
+  });
+  function paint() { for (const [name, b] of buttons) b.classList.toggle("on", name === value); }
+  node.append(...buttons.map(([, b]) => b));
+  paint();
+  return {
+    node,
+    get value() { return value ? [value] : []; },
+    sync(text) { node.hidden = !text.trim(); },
+    reset() { value = null; paint(); node.hidden = true; },
+  };
+}
+
 let toastTimer;
 function toast(msg, actionLabel, action) {
   $("toast-msg").textContent = msg;
@@ -152,21 +194,24 @@ function dayLead(value) {
 }
 
 // ---------- views ----------
-const TITLES = { main: "Expenses", notebook: "Expenses", charts: "Charts", recurring: "Recurring" };
+const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", charts: "Charts", recurring: "Recurring" };
 
-// The home screen is either the list UI ("main") or the notebook; the choice is remembered.
-const homeView = () => (localStorage.getItem("home") === "notebook" ? "notebook" : "main");
+// The home screen is the list UI ("main"), the notebook or the Material view; the choice is remembered.
+const HOMES = ["main", "notebook", "material"];
+const homeView = () => { const h = localStorage.getItem("home"); return HOMES.includes(h) ? h : "main"; };
 
 async function show(name) {
   for (const v of Object.keys(TITLES)) $(`view-${v}`).hidden = v !== name;
   $("title").textContent = TITLES[name];
-  $("back").hidden = name === "main" || name === "notebook";
+  $("back").hidden = HOMES.includes(name);
   $("entry").hidden = name !== "main";
   document.body.classList.toggle("nb", name === "notebook");
-  $("switch-view").textContent = homeView() === "main" ? "Notebook view" : "List view";
+  document.body.classList.toggle("mat", name === "material");
+  for (const b of document.querySelectorAll(".switch-view")) b.hidden = b.dataset.home === homeView();
   try {
     if (name === "main") { buildEntry(); await renderMain(); }
     else if (name === "notebook") await renderNotebook();
+    else if (name === "material") await renderMaterial();
     else if (name === "charts") await renderCharts();
     else { buildRecurringEntry(); await renderRecurring(); }
   } catch (err) {
@@ -175,10 +220,9 @@ async function show(name) {
 }
 
 $("back").addEventListener("click", () => show(homeView()));
-$("switch-view").addEventListener("click", () => {
-  localStorage.setItem("home", homeView() === "main" ? "notebook" : "main");
-  show(homeView());
-});
+for (const b of document.querySelectorAll(".switch-view")) {
+  b.addEventListener("click", () => { localStorage.setItem("home", b.dataset.home); show(b.dataset.home); });
+}
 $("go-charts").addEventListener("click", () => show("charts"));
 $("go-recurring").addEventListener("click", () => show("recurring"));
 
@@ -205,6 +249,7 @@ function parseEntry(text) {
 function buildEntry() {
   const lead = dateLead(todayStr());
   const input = textInput("nm one", "", "e.g. chai 25", { maxlength: "120", enterkeyhint: "done", autocapitalize: "sentences" });
+  const picker = tagPicker();
   let saving = false;
 
   async function trySave() {
@@ -214,7 +259,7 @@ function buildEntry() {
     saving = true;
     try {
       await api("POST", "/api/expenses", {
-        name: parsed.name, amount: amountText(parsed.paise), date: lead.value, tags: [],
+        name: parsed.name, amount: amountText(parsed.paise), date: lead.value, tags: picker.value,
       });
     } catch (err) {
       saving = false;
@@ -223,6 +268,7 @@ function buildEntry() {
     }
     openMonths.add(lead.value.slice(0, 7));
     input.value = "";
+    picker.reset();
     lead.value = todayStr();
     saving = false;
     await renderMain();
@@ -230,9 +276,10 @@ function buildEntry() {
   }
 
   input.addEventListener("change", trySave);
+  input.addEventListener("input", () => picker.sync(input.value));
   lead.input.addEventListener("change", () => { lead.value = lead.input.value; });
 
-  $("entry").replaceChildren(el("div", { class: "new" }, el("div", { class: "line" }, lead.node, input)));
+  $("entry").replaceChildren(el("div", { class: "new" }, picker.node, el("div", { class: "line" }, lead.node, input)));
 }
 
 async function renderMain() {
@@ -287,7 +334,31 @@ function expenseLine(it) {
   const name = nameInput(it.name);
   const amount = amountInput(it.amount_paise);
   const del = el("button", { class: "del", type: "button", "aria-label": "Delete", text: "×" });
-  const row = el("div", { class: "line" }, lead.node, name, amount, del);
+  // The dot shows the tag; tapping it opens the badges to change it.
+  const dot = el("button", { class: "tagdot", type: "button", "aria-label": "Change tag" });
+  const paintDot = () => {
+    const t = it.tags.find(isKnownTag);
+    if (t) dot.style.setProperty("--tc", tagColor(t)); else dot.style.removeProperty("--tc");
+    dot.classList.toggle("none", !t);
+    dot.title = t || "No tag";
+  };
+  paintDot();
+  const picker = tagPicker(it.tags.find(isKnownTag) || null, (value) => setTags(value));
+  picker.node.hidden = true;
+  dot.addEventListener("click", () => { picker.node.hidden = !picker.node.hidden; });
+  const row = el("div", { class: "line" }, lead.node, el("div", { class: "namecell" }, dot, name), amount, del);
+  const wrap = el("div", { class: "exp" }, row, picker.node);
+
+  async function setTags(value) {
+    const tags = it.tags.filter((t) => !isKnownTag(t)).concat(value);
+    try {
+      const saved = await api("PUT", `/api/expenses/${it.id}`, {
+        name: it.name, amount: amountText(it.amount_paise), date: it.date, note: it.note, tags,
+      });
+      Object.assign(it, saved);
+      paintDot();
+    } catch (err) { toast(err.message); }
+  }
 
   function revert() {
     name.value = it.name; setAmount(amount, it.amount_paise); lead.value = it.date;
@@ -327,7 +398,7 @@ function expenseLine(it) {
       await renderMain();
     });
   });
-  return row;
+  return wrap;
 }
 
 // ---------- charts ----------
@@ -352,6 +423,7 @@ async function renderCharts() {
   for (const t of summary.by_tag) {
     const fill = el("div", { class: "bar-fill" });
     fill.style.width = `${(t.amount_paise / max) * 100}%`;
+    fill.style.background = tagColor(t.tag);
     tags.append(el("div", { class: "bar-row" },
       el("div", { class: "top" }, el("span", { text: t.tag }), el("span", { text: inr(t.amount_paise) })),
       el("div", { class: "bar-track" }, fill)));
