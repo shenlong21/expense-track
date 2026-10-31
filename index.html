@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Expenses</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="app" hidden>
+    <header>
+      <button id="back" class="icon" aria-label="Back" hidden>&#8249;</button>
+      <h1 id="title">Expenses</h1>
+      <button id="menu-btn" class="icon" aria-label="Menu">&#8942;</button>
+      <div id="menu" class="menu" hidden>
+        <button id="switch-view" type="button">Notebook view</button>
+        <button id="go-charts" type="button">Charts</button>
+        <button id="go-recurring" type="button">Recurring</button>
+        <button id="export" type="button">Back up (CSV)</button>
+        <button id="import" type="button">Restore from CSV</button>
+        <div id="backup-note" class="menu-note"></div>
+      </div>
+    </header>
+
+    <section id="view-main" class="view">
+      <div id="months"></div>
+    </section>
+
+    <section id="view-notebook" class="view" hidden>
+      <div id="nb-page"></div>
+      <div id="nb-more"></div>
+    </section>
+
+    <section id="view-charts" class="view" hidden>
+      <h2>By tag, this month</h2>
+      <div id="chart-tags"></div>
+      <h2>Last 6 months</h2>
+      <div id="chart-trend" class="trend"></div>
+    </section>
+
+    <section id="view-recurring" class="view" hidden>
+      <p class="hint">Added automatically on that day each month. Day 31 falls on the last day of shorter months.</p>
+      <div id="recurring-entry"></div>
+      <div id="recurring-list"></div>
+    </section>
+
+    <div id="entry"></div>
+  </div>
+
+  <input id="import-file" type="file" accept=".csv,text/csv" hidden>
+
+  <div id="toast" class="toast" role="status" hidden>
+    <span id="toast-msg"></span>
+    <button id="toast-action" type="button" hidden></button>
+  </div>
+
+  <script src="local.js"></script>
+  <script src="app.js"></script>
+  <script src="notebook.js"></script>
+</body>
+</html>
