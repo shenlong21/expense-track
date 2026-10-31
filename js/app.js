@@ -309,6 +309,10 @@ const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", w
 // The home screen is the list UI ("main"), the notebook, the Material, WinUI or iOS view; the choice is remembered.
 const HOMES = ["main", "notebook", "material", "winui", "ios"];
 const homeView = () => { const h = localStorage.getItem("home"); return HOMES.includes(h) ? h : "main"; };
+// Android takes an installed app's navigation bar colour from its manifest, not from the page, so link
+// the manifest for the chosen view; Chrome picks it up when it next refreshes the installed app.
+const linkManifest = () => { $("manifest").href = `manifests/${homeView()}.webmanifest`; };
+linkManifest();
 
 // The phone's status and navigation bars take the colour of the header on screen (meta theme-color).
 // A see-through header (notebook, iOS) is blended with the page colour behind it.
@@ -353,6 +357,7 @@ async function show(name) {
     console.error(err);
     if (HOMES.includes(name) && name !== "main") {     // this view will not open (for example old cached files): fall back to the list
       localStorage.setItem("home", "main");
+      linkManifest();
       toast("Could not open that view, switched to List view");
       await show("main");
     }
@@ -361,7 +366,7 @@ async function show(name) {
 
 $("back").addEventListener("click", () => show(homeView()));
 for (const b of document.querySelectorAll(".switch-view")) {
-  b.addEventListener("click", () => { localStorage.setItem("home", b.dataset.home); show(b.dataset.home); });
+  b.addEventListener("click", () => { localStorage.setItem("home", b.dataset.home); linkManifest(); show(b.dataset.home); });
 }
 $("go-charts").addEventListener("click", () => show("charts"));
 $("go-tags").addEventListener("click", () => show("tags"));
