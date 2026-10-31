@@ -25,8 +25,12 @@ server, no account and no login. GitHub Pages only serves the app's files.
 
 ## Two views
 Menu → **Notebook view / List view** switches the home screen. Both edit the same data.
-Type `chai 25` (or `25 chai`, `auto rs 1,250.50`) to add an expense; in the notebook, write a date such as
-`28 Oct` on a blank line to turn to that day.
+Type `chai 25` (or `25 chai`, `auto rs 1,250.50`) to add an expense. The notebook reads like a notes app:
+each month is a heading with its total, each day a subheading with its total at the bottom, and under it a
+section per tag. Write freely on any line, like `Petrol - 3000`; every line with an amount is an expense of
+that tag and the totals follow as you type. Lines without an amount stay as notes (on this phone only).
+Write `#food` in a line to move it to that tag, or a date such as `28 Oct` on a line + Enter to turn to that day.
+Older months load as you scroll down.
 
 ## Updating
 Push a change to `main`; the action redeploys. The app picks the new version up the next time it opens online.

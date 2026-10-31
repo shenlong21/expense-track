@@ -58,11 +58,11 @@ function winBreakdown(items, total) {
   const bar = el("div", { class: "w-stack" });
   const legend = el("div", { class: "w-legend" });
   for (const [tag, paise] of [...by].sort((a, b) => b[1] - a[1])) {
-    const seg = el("span", { title: `${tag} ${inr(paise)}` });
+    const seg = el("span", { title: `${tagLabel(tag)} ${inr(paise)}` });
     seg.style.flex = String(paise);
     seg.style.background = tagColor(tag);
     bar.append(seg);
-    const item = el("span", { class: "w-key" }, el("i"), `${tag} ${Math.round((paise / total) * 100)}%`);
+    const item = el("span", { class: "w-key" }, el("i"), `${tagLabel(tag)} ${Math.round((paise / total) * 100)}%`);
     item.firstChild.style.background = tagColor(tag);
     legend.append(item);
   }

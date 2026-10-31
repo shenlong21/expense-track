@@ -69,7 +69,7 @@ function iosRow(it) {
     icon,
     el("div", { class: "i-text" },
       el("div", { class: "i-title", text: it.name }),
-      el("div", { class: "i-sub", text: tag || "No tag" })),
+      ...(tag ? [el("div", { class: "i-sub", text: tag })] : [])),
     el("span", { class: "i-val", text: inr(it.amount_paise) }),
     el("span", { class: "i-chev", text: "›" }));
   row.addEventListener("click", () => iosSheet(it));

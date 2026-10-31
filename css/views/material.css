@@ -14,7 +14,6 @@ body.mat {
   }
 }
 body.mat header { background: var(--bg); }
-body.mat .menu { border-radius: 16px; background: var(--m-surface3); }
 .m-hero { background: var(--m-container); color: var(--m-on-container); border-radius: 28px; padding: 20px 24px 22px; margin-top: 4px; }
 .m-hero .lbl { font-size: .8rem; font-weight: 500; letter-spacing: .04em; opacity: .8; }
 .m-hero .big { font-size: 2.6rem; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums; margin: 4px 0 2px; }

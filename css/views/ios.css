@@ -17,9 +17,6 @@ body.ios header { background: var(--i-bar); backdrop-filter: blur(20px) saturate
   margin: 0 -16px; padding-left: 16px; padding-right: 16px; box-shadow: 0 .5px 0 var(--line); }
 body.ios header h1 { text-align: center; font-size: 1.06rem; font-weight: 600; padding-left: 44px; }
 body.ios .icon { color: var(--accent); }
-body.ios .menu { border-radius: 14px; background: var(--i-bar); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 8px 30px rgba(0,0,0,.2); }
-body.ios .menu > * + * { box-shadow: 0 -.5px 0 var(--line); }
 
 .i-card { margin-top: 14px; padding: 16px 18px 18px; background: var(--card); border-radius: 12px; }
 .i-cardtop { display: flex; justify-content: space-between; align-items: center; }
