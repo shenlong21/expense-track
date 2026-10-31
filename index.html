@@ -8,13 +8,13 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Expenses</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="app.css">
-  <link rel="stylesheet" href="material.css">
-  <link rel="stylesheet" href="winui.css">
-  <link rel="stylesheet" href="gnome.css">
-  <link rel="stylesheet" href="ios.css">
+  <link rel="icon" href="icons/icon-rounded.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/views/material.css">
+  <link rel="stylesheet" href="css/views/winui.css">
+  <link rel="stylesheet" href="css/views/ios.css">
 </head>
 <body>
   <div id="app" hidden>
@@ -27,9 +27,8 @@
         <button class="switch-view" data-home="notebook" type="button">Notebook view</button>
         <button class="switch-view" data-home="material" type="button">Material view</button>
         <button class="switch-view" data-home="winui" type="button">WinUI view</button>
-        <button class="switch-view" data-home="gnome" type="button">GNOME view</button>
         <button class="switch-view" data-home="ios" type="button">iOS view</button>
-        <button id="go-charts" type="button">Charts</button>
+        <button id="go-charts" type="button">Analytics</button>
         <button id="go-tags" type="button">Tags</button>
         <button id="go-recurring" type="button">Recurring</button>
         <button id="export" type="button">Back up (CSV)</button>
@@ -51,16 +50,9 @@
 
     <section id="view-winui" class="view" hidden></section>
 
-    <section id="view-gnome" class="view" hidden></section>
-
     <section id="view-ios" class="view" hidden></section>
 
-    <section id="view-charts" class="view" hidden>
-      <h2>By tag, this month</h2>
-      <div id="chart-tags"></div>
-      <h2>Last 6 months</h2>
-      <div id="chart-trend" class="trend"></div>
-    </section>
+    <section id="view-charts" class="view charts" hidden></section>
 
     <section id="view-tags" class="view" hidden></section>
 
@@ -80,13 +72,12 @@
     <button id="toast-action" type="button" hidden></button>
   </div>
 
-  <script src="local.js"></script>
-  <script src="app.js"></script>
-  <script src="notebook.js"></script>
-  <script src="material.js"></script>
-  <script src="winui.js"></script>
-  <script src="gnome.js"></script>
-  <script src="ios.js"></script>
-  <script src="tags.js"></script>
+  <script src="js/local.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/views/notebook.js"></script>
+  <script src="js/views/material.js"></script>
+  <script src="js/views/winui.js"></script>
+  <script src="js/views/ios.js"></script>
+  <script src="js/tags.js"></script>
 </body>
 </html>

@@ -71,7 +71,7 @@ function tagRow(t, u) {
   const head = el("button", { type: "button", class: "tg-head", "aria-expanded": String(open) },
     dot,
     el("span", { class: "tg-text" },
-      el("span", { class: "tg-name", text: t.name }),
+      el("span", { class: "tg-name", text: tagLabel(t.name) }),
       el("span", { class: "tg-meta", text: t.listed ? used : `${used} · not in your list` })),
     el("span", { class: "chev", text: "›" }));
   head.addEventListener("click", () => { openTag = open ? null : t.name; renderTags(); });

@@ -1,7 +1,11 @@
 // Keeps the app available offline. Your expenses are not here; they live in the phone's IndexedDB.
-const CACHE = "expenses-shell-v7";
-const SHELL = ["./", "./index.html", "./app.css", "./app.js", "./notebook.js", "./material.js", "./material.css", "./winui.js", "./winui.css", "./gnome.js", "./gnome.css", "./ios.js", "./ios.css", "./tags.js", "./local.js",
-  "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+const CACHE = "expenses-shell-v46";
+const SHELL = ["./", "./index.html", "./manifest.webmanifest",
+  "./css/app.css", "./css/views/material.css", "./css/views/winui.css", "./css/views/ios.css",
+  "./js/local.js", "./js/app.js", "./js/tags.js",
+  "./js/views/notebook.js", "./js/views/material.js", "./js/views/winui.js", "./js/views/ios.js",
+  "./icons/icon-rounded.svg", "./icons/icon-192.png", "./icons/icon-512.png",
+  "./icons/icon-maskable-192.png", "./icons/icon-maskable-512.png", "./icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

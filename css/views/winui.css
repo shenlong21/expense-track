@@ -16,9 +16,6 @@ body.win {
 }
 body.win header { background: var(--bg); }
 body.win header h1 { font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; font-weight: 600; }
-body.win .menu { border-radius: 8px; background: var(--card); box-shadow: 0 8px 16px rgba(0,0,0,.14), inset 0 0 0 1px var(--w-stroke); }
-body.win .menu > * + * { box-shadow: none; }
-body.win .menu button:hover { background: var(--w-hover); }
 
 .w-card { background: var(--card); border-radius: 8px; box-shadow: inset 0 0 0 1px var(--w-stroke), 0 1px 2px rgba(0,0,0,.04); }
 .w-summary { padding: 16px 20px 18px; margin-top: 4px; }
