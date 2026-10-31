@@ -310,8 +310,13 @@ const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", w
 const HOMES = ["main", "notebook", "material", "winui", "ios"];
 const homeView = () => { const h = localStorage.getItem("home"); return HOMES.includes(h) ? h : "main"; };
 // Android takes an installed app's navigation bar colour from its manifest, not from the page, so link
-// the manifest for the chosen view; Chrome picks it up when it next refreshes the installed app.
-const linkManifest = () => { $("manifest").href = `manifests/${homeView()}.webmanifest`; };
+// the manifest for the chosen view (its colour matches the view's footer, or the bottom of the view).
+// The link is only ever added here, so installing never sees another view's manifest first.
+function linkManifest() {
+  let link = document.querySelector('link[rel="manifest"]');
+  if (!link) { link = el("link", { rel: "manifest" }); document.head.append(link); }
+  link.href = `manifests/${homeView()}.webmanifest`;
+}
 linkManifest();
 
 // The phone's status and navigation bars take the colour of the header on screen (meta theme-color).
