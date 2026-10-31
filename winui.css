@@ -66,7 +66,7 @@ body.win .tagbadge.pick { padding: 4px 10px; }
 
 .w-bar { position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); z-index: 6; max-width: 560px; margin: 0 auto;
   padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px;
-  background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  background: var(--bg);
   box-shadow: 0 -1px 0 var(--w-stroke); }
 .w-bar .tagrow { padding: 0; }
 .w-barrow { display: flex; gap: 8px; }

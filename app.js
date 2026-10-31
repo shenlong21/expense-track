@@ -288,7 +288,13 @@ async function show(name) {
     else if (name === "tags") await renderTags();
     else { buildRecurringEntry(); await renderRecurring(); }
   } catch (err) {
-    if (err.message !== "Signed out") console.error(err);
+    if (err.message === "Signed out") return;
+    console.error(err);
+    if (HOMES.includes(name) && name !== "main") {     // this view will not open (for example old cached files): fall back to the list
+      localStorage.setItem("home", "main");
+      toast("Could not open that view, switched to List view");
+      await show("main");
+    }
   }
 }
 
@@ -607,7 +613,7 @@ if (window.visualViewport) {
 
 // ---------- boot ----------
 async function init() {
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => {});
   try {
     await localReady();
     await showApp();

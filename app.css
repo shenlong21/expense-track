@@ -19,7 +19,7 @@ button { background: none; border: 0; cursor: pointer; }
 h1, h2 { margin: 0; }
 h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 8px; }
 
-#app { max-width: 560px; margin: 0 auto; padding: 0 16px calc(110px + env(safe-area-inset-bottom)); }
+#app { max-width: 560px; margin: 0 auto; padding: 0 16px calc(180px + env(safe-area-inset-bottom)); }
 header { position: sticky; top: 0; z-index: 5; background: var(--bg); display: flex; align-items: center;
   gap: 4px; padding: calc(10px + env(safe-area-inset-top)) 0 10px; }
 header h1 { flex: 1; font-size: 1.25rem; font-weight: 700; padding-left: 4px; }
