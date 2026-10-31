@@ -310,6 +310,17 @@ const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", w
 const HOMES = ["main", "notebook", "material", "winui", "ios"];
 const homeView = () => { const h = localStorage.getItem("home"); return HOMES.includes(h) ? h : "main"; };
 
+// The phone's status and navigation bars take the colour of the header on screen (meta theme-color).
+// A see-through header (notebook, iOS) is blended with the page colour behind it.
+function syncThemeColor() {
+  const rgb = (c) => (c.match(/[\d.]+/g) || []).map(Number);
+  const [pr, pg, pb] = rgb(getComputedStyle(document.body).backgroundColor);
+  const [r, g, b, a = 1] = rgb(getComputedStyle(document.querySelector("header")).backgroundColor);
+  const mix = (top, under) => Math.round(top * a + under * (1 - a));
+  document.querySelector('meta[name="theme-color"]').content = `rgb(${mix(r, pr)}, ${mix(g, pg)}, ${mix(b, pb)})`;
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncThemeColor);
+
 async function show(name) {
   history.replaceState(null, "", HOMES.includes(name) ? location.pathname + location.search : `#${name}`);
   for (const v of Object.keys(TITLES)) $(`view-${v}`).hidden = v !== name;
@@ -321,6 +332,7 @@ async function show(name) {
   document.body.classList.toggle("win", name === "winui");
   document.body.classList.toggle("ios", name === "ios");
   document.body.classList.toggle("on-charts", name === "charts");
+  syncThemeColor();
   // Every view stays in the menu; the one in use is ticked.
   for (const b of document.querySelectorAll(".switch-view")) {
     const on = b.dataset.home === homeView();
