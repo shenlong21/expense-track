@@ -309,15 +309,15 @@ const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", w
 // The home screen is the list UI ("main"), the notebook, the Material, WinUI or iOS view; the choice is remembered.
 const HOMES = ["main", "notebook", "material", "winui", "ios"];
 const homeView = () => { const h = localStorage.getItem("home"); return HOMES.includes(h) ? h : "main"; };
-// Android takes an installed app's navigation bar colour from its manifest, not from the page, so link
-// the manifest for the chosen view (its colour matches the view's footer, or the bottom of the view).
-// The link is only ever added here, so installing never sees another view's manifest first.
-function linkManifest() {
-  let link = document.querySelector('link[rel="manifest"]');
-  if (!link) { link = el("link", { rel: "manifest" }); document.head.append(link); }
-  link.href = `manifests/${homeView()}.webmanifest`;
+// Android takes an installed app's navigation bar colour from its manifest, and Chrome only updates an
+// installed app from the manifest URL it was installed with. So there is one manifest URL, and sw.js answers
+// it with the chosen view's manifest (colour = that view's footer, or the bottom of the view). This saves the
+// choice where the service worker can read it.
+function saveManifestView() {
+  if (!("caches" in window)) return;
+  caches.open("prefs").then((c) => c.put("home", new Response(homeView()))).catch(() => {});
 }
-linkManifest();
+saveManifestView();
 
 // The phone's status and navigation bars take the colour of the header on screen (meta theme-color).
 // A see-through header (notebook, iOS) is blended with the page colour behind it.
@@ -362,7 +362,7 @@ async function show(name) {
     console.error(err);
     if (HOMES.includes(name) && name !== "main") {     // this view will not open (for example old cached files): fall back to the list
       localStorage.setItem("home", "main");
-      linkManifest();
+      saveManifestView();
       toast("Could not open that view, switched to List view");
       await show("main");
     }
@@ -371,7 +371,7 @@ async function show(name) {
 
 $("back").addEventListener("click", () => show(homeView()));
 for (const b of document.querySelectorAll(".switch-view")) {
-  b.addEventListener("click", () => { localStorage.setItem("home", b.dataset.home); linkManifest(); show(b.dataset.home); });
+  b.addEventListener("click", () => { localStorage.setItem("home", b.dataset.home); saveManifestView(); show(b.dataset.home); });
 }
 $("go-charts").addEventListener("click", () => show("charts"));
 $("go-tags").addEventListener("click", () => show("tags"));
