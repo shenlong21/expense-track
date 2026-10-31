@@ -45,9 +45,37 @@ function parseAmount(text) {
 }
 
 // The tags offered while typing an expense. Each has its own colour, used on badges and in the charts.
-const TAGS = [
+const BASE_TAGS = [
   ["rent", "#7c5cff"], ["groceries", "#2e9e5b"], ["travel", "#1f8ef1"], ["shopping", "#e0489b"], ["food", "#f08a24"],
 ];
+// Tags you add yourself are kept on this phone, each with the next colour from this palette.
+const TAG_PALETTE = ["#00a5a8", "#c239b3", "#d13438", "#6b8e23", "#ca5010", "#0099bc", "#8e8cd8", "#986f0b"];
+const validTags = (v) => (Array.isArray(v) ? v.filter((t) => Array.isArray(t) && typeof t[0] === "string" && /^#[0-9a-f]{6}$/i.test(t[1])) : []);
+const readJson = (key) => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; } };
+// The tag list lives on this phone; the Tags screen adds, recolours, renames and deletes.
+const TAGS = (() => {
+  const saved = readJson("tagList");
+  if (Array.isArray(saved)) return validTags(saved);
+  return [...BASE_TAGS, ...validTags(readJson("customTags"))];   // first run, or from an older version
+})();
+function saveTags() {
+  try { localStorage.setItem("tagList", JSON.stringify(TAGS)); } catch { /* storage full */ }
+}
+const nextTagColor = () => TAG_PALETTE.find((c) => !TAGS.some((t) => t[1] === c)) || TAG_PALETTE[TAGS.length % TAG_PALETTE.length];
+
+// "  Pets " -> "pets"; null if it is not a valid tag name.
+function cleanTagName(raw) {
+  const name = String(raw).trim().toLowerCase().split(/\s+/).join(" ");
+  return /^[a-z0-9][a-z0-9 _&/+-]{0,29}$/.test(name) ? name : null;
+}
+
+// Adds the tag to the list (if new) and returns its name, or null if the name is not valid.
+function addCustomTag(raw, color) {
+  const name = cleanTagName(raw);
+  if (!name) return null;
+  if (!TAGS.some(([n]) => n === name)) { TAGS.push([name, color || nextTagColor()]); saveTags(); }
+  return name;
+}
 const tagColor = (tag) => (TAGS.find(([n]) => n === tag) || [, "#8a93a3"])[1];
 
 const isKnownTag = (tag) => TAGS.some(([n]) => n === tag);
@@ -62,7 +90,7 @@ function tagBadge(tag) {
 function tagPicker(initial = null, onChange) {
   let value = initial;
   const node = el("div", { class: "tagrow", hidden: "", role: "group", "aria-label": "Tag" });
-  const buttons = TAGS.map(([name]) => {
+  const makeButton = (name) => {
     const b = tagBadge(name);
     b.className = "tagbadge pick";
     b.setAttribute("role", "button");
@@ -74,13 +102,51 @@ function tagPicker(initial = null, onChange) {
       if (onChange) onChange(value ? [value] : []);
     });
     return [name, b];
-  });
+  };
+  const buttons = TAGS.map(([name]) => makeButton(name));
   function paint() { for (const [name, b] of buttons) b.classList.toggle("on", name === value); }
-  node.append(...buttons.map(([, b]) => b));
+  let editing = false;
+  const plus = el("span", { class: "tagbadge pick add", role: "button", text: "+ New" });
+  plus.tabIndex = 0;
+  plus.addEventListener("mousedown", (e) => e.preventDefault());
+  plus.addEventListener("click", startNew);
+  node.append(...buttons.map(([, b]) => b), plus);
   paint();
+
+  // "+ New" turns into a small text box; Enter makes the tag and selects it.
+  function startNew() {
+    const anchor = document.activeElement;   // the text field you were typing in
+    const input = el("input", { class: "tagnew", placeholder: "New tag", maxlength: "30", autocomplete: "off", enterkeyhint: "done", "aria-label": "New tag name" });
+    editing = true;
+    plus.replaceWith(input);
+    let done = false;
+    const finish = (commit, refocus) => {
+      if (done) return;
+      done = true;
+      const name = commit ? addCustomTag(input.value) : null;
+      if (commit && input.value.trim() && !name) toast("Tags use letters, numbers and spaces (up to 30)");
+      input.replaceWith(plus);
+      if (name) {
+        let pair = buttons.find(([n]) => n === name);
+        if (!pair) { pair = makeButton(name); buttons.push(pair); plus.before(pair[1]); }
+        value = name;
+        paint();
+        if (onChange) onChange([name]);
+      }
+      editing = false;
+      if (refocus && anchor && anchor.focus) anchor.focus();
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); finish(true, true); }
+      else if (e.key === "Escape") { e.preventDefault(); finish(false, true); }
+    });
+    input.addEventListener("blur", () => finish(true, false));
+    input.focus();
+  }
   return {
     node,
     get value() { return value ? [value] : []; },
+    get editing() { return editing; },
     sync(text) { node.hidden = !text.trim(); },
     reset() { value = null; paint(); node.hidden = true; },
   };
@@ -194,10 +260,10 @@ function dayLead(value) {
 }
 
 // ---------- views ----------
-const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", charts: "Charts", recurring: "Recurring" };
+const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", winui: "Expenses", gnome: "Expenses", charts: "Charts", tags: "Tags", recurring: "Recurring" };
 
-// The home screen is the list UI ("main"), the notebook or the Material view; the choice is remembered.
-const HOMES = ["main", "notebook", "material"];
+// The home screen is the list UI ("main"), the notebook, the Material, WinUI or GNOME view; the choice is remembered.
+const HOMES = ["main", "notebook", "material", "winui", "gnome"];
 const homeView = () => { const h = localStorage.getItem("home"); return HOMES.includes(h) ? h : "main"; };
 
 async function show(name) {
@@ -207,12 +273,17 @@ async function show(name) {
   $("entry").hidden = name !== "main";
   document.body.classList.toggle("nb", name === "notebook");
   document.body.classList.toggle("mat", name === "material");
+  document.body.classList.toggle("win", name === "winui");
+  document.body.classList.toggle("gnm", name === "gnome");
   for (const b of document.querySelectorAll(".switch-view")) b.hidden = b.dataset.home === homeView();
   try {
     if (name === "main") { buildEntry(); await renderMain(); }
     else if (name === "notebook") await renderNotebook();
     else if (name === "material") await renderMaterial();
+    else if (name === "winui") await renderWinui();
+    else if (name === "gnome") await renderGnome();
     else if (name === "charts") await renderCharts();
+    else if (name === "tags") await renderTags();
     else { buildRecurringEntry(); await renderRecurring(); }
   } catch (err) {
     if (err.message !== "Signed out") console.error(err);
@@ -224,6 +295,7 @@ for (const b of document.querySelectorAll(".switch-view")) {
   b.addEventListener("click", () => { localStorage.setItem("home", b.dataset.home); show(b.dataset.home); });
 }
 $("go-charts").addEventListener("click", () => show("charts"));
+$("go-tags").addEventListener("click", () => show("tags"));
 $("go-recurring").addEventListener("click", () => show("recurring"));
 
 // ---------- main: blank entry + month accordion ----------
@@ -253,6 +325,7 @@ function buildEntry() {
   let saving = false;
 
   async function trySave() {
+    if (picker.editing) return;
     const parsed = parseEntry(input.value);
     if (saving) return;
     if (!parsed) { if (input.value.trim()) toast("Add an amount, like: chai 25"); return; }
@@ -277,6 +350,7 @@ function buildEntry() {
 
   input.addEventListener("change", trySave);
   input.addEventListener("input", () => picker.sync(input.value));
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); trySave(); } });
   lead.input.addEventListener("change", () => { lead.value = lead.input.value; });
 
   $("entry").replaceChildren(el("div", { class: "new" }, picker.node, el("div", { class: "line" }, lead.node, input)));

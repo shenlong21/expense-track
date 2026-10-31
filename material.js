@@ -85,7 +85,7 @@ function materialItem(it) {
       if (e.key === "Enter") { e.preventDefault(); finish(true); }
       else if (e.key === "Escape") finish(false);
     });
-    input.addEventListener("blur", () => finish(true));
+    input.addEventListener("blur", () => { if (!picker.editing) finish(true); });
     row.replaceChildren(avatar(), input, picker.node);
     input.focus();
     input.select();

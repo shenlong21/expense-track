@@ -12,6 +12,8 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="material.css">
+  <link rel="stylesheet" href="winui.css">
+  <link rel="stylesheet" href="gnome.css">
 </head>
 <body>
   <div id="app" hidden>
@@ -23,7 +25,10 @@
         <button class="switch-view" data-home="main" type="button">List view</button>
         <button class="switch-view" data-home="notebook" type="button">Notebook view</button>
         <button class="switch-view" data-home="material" type="button">Material view</button>
+        <button class="switch-view" data-home="winui" type="button">WinUI view</button>
+        <button class="switch-view" data-home="gnome" type="button">GNOME view</button>
         <button id="go-charts" type="button">Charts</button>
+        <button id="go-tags" type="button">Tags</button>
         <button id="go-recurring" type="button">Recurring</button>
         <button id="export" type="button">Back up (CSV)</button>
         <button id="import" type="button">Restore from CSV</button>
@@ -42,12 +47,18 @@
 
     <section id="view-material" class="view" hidden></section>
 
+    <section id="view-winui" class="view" hidden></section>
+
+    <section id="view-gnome" class="view" hidden></section>
+
     <section id="view-charts" class="view" hidden>
       <h2>By tag, this month</h2>
       <div id="chart-tags"></div>
       <h2>Last 6 months</h2>
       <div id="chart-trend" class="trend"></div>
     </section>
+
+    <section id="view-tags" class="view" hidden></section>
 
     <section id="view-recurring" class="view" hidden>
       <p class="hint">Added automatically on that day each month. Day 31 falls on the last day of shorter months.</p>
@@ -69,5 +80,8 @@
   <script src="app.js"></script>
   <script src="notebook.js"></script>
   <script src="material.js"></script>
+  <script src="winui.js"></script>
+  <script src="gnome.js"></script>
+  <script src="tags.js"></script>
 </body>
 </html>

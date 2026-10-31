@@ -1,6 +1,6 @@
 // Keeps the app available offline. Your expenses are not here; they live in the phone's IndexedDB.
-const CACHE = "expenses-shell-v2";
-const SHELL = ["./", "./index.html", "./app.css", "./app.js", "./notebook.js", "./material.js", "./material.css", "./local.js",
+const CACHE = "expenses-shell-v5";
+const SHELL = ["./", "./index.html", "./app.css", "./app.js", "./notebook.js", "./material.js", "./material.css", "./winui.js", "./winui.css", "./gnome.js", "./gnome.css", "./tags.js", "./local.js",
   "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {

@@ -258,6 +258,39 @@ async function localApi(method, path, body) {
       return null;
     }
   }
+  if (resource === "tags") {
+    if (method === "GET") {
+      const t = await transaction(["expenses"]);
+      const use = new Map();
+      for (const e of await wrap(t.objectStore("expenses").getAll())) {
+        for (const tag of e.tags) {
+          const u = use.get(tag) || { tag, count: 0, amount_paise: 0 };
+          u.count += 1; u.amount_paise += e.paise;
+          use.set(tag, u);
+        }
+      }
+      return [...use.values()];
+    }
+    // Rename a tag (or remove it) on every expense and recurring item that has it.
+    if (method === "POST" && (rawId === "rename" || rawId === "remove")) {
+      const from = normalizeTags([body.from])[0];
+      const to = rawId === "rename" ? normalizeTags([body.to])[0] : null;
+      if (!from || (rawId === "rename" && !to)) throw new Error("Invalid tag");
+      const t = await transaction(["expenses", "recurring"], "readwrite");
+      let changed = 0;
+      for (const name of ["expenses", "recurring"]) {
+        const store = t.objectStore(name);
+        for (const row of await wrap(store.getAll())) {
+          if (!row.tags.includes(from)) continue;
+          const tags = row.tags.map((x) => (x === from ? to : x)).filter((x, i, a) => x && a.indexOf(x) === i);
+          await wrap(store.put({ ...row, tags }));
+          changed += 1;
+        }
+      }
+      await t.done;
+      return { changed };
+    }
+  }
   throw new Error("Unsupported request");
 }
 
