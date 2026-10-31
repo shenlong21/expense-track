@@ -1,5 +1,5 @@
 // Keeps the app available offline. Your expenses are not here; they live in the phone's IndexedDB.
-const CACHE = "expenses-shell-v46";
+const CACHE = "expenses-shell-v58";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest",
   "./css/app.css", "./css/views/material.css", "./css/views/winui.css", "./css/views/ios.css",
   "./js/local.js", "./js/app.js", "./js/tags.js",

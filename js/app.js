@@ -298,6 +298,11 @@ function dayLead(value) {
   };
 }
 
+// Chrome keeps a dropdown's focus ring after it is picked with a mouse or finger; mark those so the
+// ring only shows for keyboard focus (see select[data-pointer] in app.css).
+document.addEventListener("pointerdown", (e) => { const s = e.target.closest?.("select"); if (s) s.dataset.pointer = ""; });
+document.addEventListener("focusout", (e) => { if (e.target.matches?.("select")) delete e.target.dataset.pointer; });
+
 // ---------- views ----------
 const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", winui: "Expenses", ios: "Expenses", charts: "Analytics", tags: "Tags", recurring: "Recurring" };
 
@@ -532,9 +537,10 @@ function expenseLine(it) {
 }
 
 // ---------- charts ----------
-// Two bar charts over the last 12 months: spend per month (teal) and per tag (coral, teal's complement).
-// A bar's colour also deepens with its size, like a heatmap. Every tag gets a bar, plus Untagged. Tapping a month shows that month's tags;
-// tapping a tag shows that tag's months.
+// Two circular charts over the last 12 months: spend per month as a polar chart (one teal wedge per month,
+// January at the top, bigger months reach further and are deeper) and per tag as a radar (a coral shape that
+// leans toward where the money goes, every tag plus Untagged). Tapping a month shows that month's tags;
+// tapping a tag shows that tag's months. A drilldown goes one level only.
 function compact(paise) {
   const r = paise / 100;
   if (r >= 100000) return `${(r / 100000).toFixed(1)}L`;
@@ -546,27 +552,80 @@ let chartFocus = null;                       // null for both charts, or { month
 const heat = (paise, max) => (paise ? 0.35 + 0.65 * (paise / max) : 0);
 const tagDotColor = (tag) => (tag === "untagged" ? "#8a93a3" : tagColor(tag));
 
-// One bar chart for both axes. rows: [{ key, label, aria, paise, cur?, dot? }]; hue is "teal" or "coral".
-// Without onPick the bars are not tappable (a drilldown goes one level only).
-function barChart(rows, hue, onPick) {
-  const max = Math.max(1, ...rows.map((r) => r.paise));
-  const box = el("div", { class: `vbars ${hue}` });
-  for (const r of rows) {
-    const bar = el("div", { class: "bar" + (r.paise ? "" : " zero") });
-    bar.style.height = `${(r.paise / max) * 100}%`;
-    bar.style.setProperty("--k", heat(r.paise, max).toFixed(3));
-    const label = el("span", { class: "m" });
-    if (r.dot) { const d = el("i", { class: "dot" }); d.style.background = tagDotColor(r.dot); label.append(d); }
-    label.append(el("span", { class: "t", text: r.label }));
-    const col = el(onPick ? "button" : "div", { class: "col" + (r.cur ? " cur" : ""), title: r.aria, "aria-label": `${r.aria}, ${inr(r.paise)}` },
-      el("div", { class: "barwrap" }, el("span", { class: "v", text: r.paise ? compact(r.paise) : "" }), bar), label);
-    if (!onPick) { box.append(col); continue; }
-    col.type = "button";
-    if (r.paise) col.addEventListener("click", () => onPick(r.key));
-    else col.disabled = true;               // nothing to drill into
-    box.append(col);
-  }
-  return box;
+const SVG_NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, ...kids) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+  node.append(...kids);
+  return node;
+}
+const CW = 360, CH = 300, CX = CW / 2, CY = CH / 2 + 2, CR = 100;     // chart canvas and radius
+const polarAt = (angle, r) => [CX + Math.cos(angle) * r, CY + Math.sin(angle) * r];
+const sliceAngle = (i, n) => -Math.PI / 2 + (i * 2 * Math.PI) / n;  // first slice points straight up
+function slicePath(i, n, r, gap) {           // a pie slice centred on axis i
+  const step = (2 * Math.PI) / n, a0 = sliceAngle(i, n) - step / 2 + gap, a1 = sliceAngle(i, n) + step / 2 - gap;
+  const [x0, y0] = polarAt(a0, r), [x1, y1] = polarAt(a1, r);
+  return `M${CX} ${CY} L${x0} ${y0} A${r} ${r} 0 0 1 ${x1} ${y1} Z`;
+}
+
+// Makes a chart part tappable (and reachable by keyboard) when it has something to show.
+function tappable(node, r, onPick) {
+  node.append(svgEl("title", {}, `${r.aria}, ${inr(r.paise)}`));
+  if (!onPick || !r.paise) return node;
+  node.classList.add("tap");
+  node.setAttribute("role", "button");
+  node.setAttribute("tabindex", "0");
+  node.setAttribute("aria-label", `${r.aria}, ${inr(r.paise)}`);
+  node.addEventListener("click", () => onPick(r.key));
+  node.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(r.key); } });
+  return node;
+}
+
+function axisLabel(i, n, at, lines, cls) {
+  const [x, y] = polarAt(sliceAngle(i, n), at);
+  const anchor = Math.abs(x - CX) < 8 ? "middle" : x > CX ? "start" : "end";
+  return svgEl("text", { x, y: y - (lines.length - 1) * 6 + 4, "text-anchor": anchor, class: cls },
+    ...lines.map((l, j) => svgEl("tspan", { x, dy: j ? 13 : 0, class: l.cls || "" }, ...l.parts)));
+}
+
+function chartBox(kind, svg) {
+  return el("div", { class: `circ ${kind}` }, svg);
+}
+
+// Polar: rows are months; drawn clockwise from January. A wedge's area matches its amount.
+// Without onPick nothing is tappable (a drilldown goes one level only).
+function polarChart(rows, onPick) {
+  rows = [...rows].sort((a, b) => a.key.slice(5).localeCompare(b.key.slice(5)));
+  const n = rows.length, max = Math.max(1, ...rows.map((r) => r.paise));
+  const svg = svgEl("svg", { viewBox: `0 0 ${CW} ${CH}`, role: "img", "aria-label": "Spend per month" });
+  for (const f of [0.25, 0.5, 0.75, 1]) svg.append(svgEl("circle", { cx: CX, cy: CY, r: CR * Math.sqrt(f), class: "grid" + (f === 1 ? " outer" : "") }));
+  rows.forEach((r, i) => {
+    if (!r.paise) return;
+    const w = svgEl("path", { d: slicePath(i, n, CR * Math.sqrt(r.paise / max), 0.025), class: "w" });
+    w.style.setProperty("--k", heat(r.paise, max).toFixed(3));
+    svg.append(tappable(w, r, onPick));
+  });
+  rows.forEach((r, i) => svg.append(axisLabel(i, n, CR * 1.17,
+    [{ parts: [r.label], cls: r.cur ? "cur" : "" }, { parts: [r.paise ? compact(r.paise) : ""], cls: "amt" }], "lbl")));
+  return chartBox("polar", svg);
+}
+
+// Radar: rows are tags. Each tag also gets an invisible slice from the centre out past its label,
+// so a tap anywhere in that direction picks it (the points themselves are too small to hit).
+function radarChart(rows, onPick) {
+  const n = rows.length, max = Math.max(1, ...rows.map((r) => r.paise)), R = 96;
+  const svg = svgEl("svg", { viewBox: `0 0 ${CW} ${CH}`, role: "img", "aria-label": "Spend per tag" });
+  const ring = (f) => rows.map((_, i) => polarAt(sliceAngle(i, n), R * f).join(",")).join(" ");
+  for (const f of [0.25, 0.5, 0.75, 1]) svg.append(svgEl("polygon", { points: ring(f), class: "grid" + (f === 1 ? " outer" : "") }));
+  rows.forEach((_, i) => { const [x, y] = polarAt(sliceAngle(i, n), R); svg.append(svgEl("line", { x1: CX, y1: CY, x2: x, y2: y, class: "grid" })); });
+  if (onPick) rows.forEach((r, i) => svg.append(tappable(svgEl("path", { d: slicePath(i, n, R * 1.55, 0), class: "zone" }), r, onPick)));
+  const pts = rows.map((r, i) => polarAt(sliceAngle(i, n), (R * r.paise) / max));
+  svg.append(svgEl("polygon", { points: pts.map((p) => p.join(",")).join(" "), class: "shape" }));
+  rows.forEach((r, i) => svg.append(svgEl("circle", { cx: pts[i][0], cy: pts[i][1], r: 5, fill: tagDotColor(r.key), class: "pt" })));
+  rows.forEach((r, i) => svg.append(axisLabel(i, n, R * 1.22, [
+    { parts: [svgEl("tspan", { fill: tagDotColor(r.key) }, "● "), r.label] },
+    { parts: [inr(r.paise)], cls: "amt" }], "lbl tag")));
+  return chartBox("radar", svg);
 }
 
 const monthRows = (pairs) => pairs.map(({ month, paise }) => ({ key: month, paise, cur: month === currentYm(),
@@ -577,22 +636,23 @@ function tagRows(amounts) {                  // amounts: Map tag -> paise
   const names = TAGS.map(([n]) => n).filter((n) => n !== "untagged");
   for (const n of amounts.keys()) if (n !== "untagged" && !names.includes(n)) names.push(n);
   names.push("untagged");
-  return names.map((n) => ({ key: n, paise: amounts.get(n) || 0, label: tagLabel(n), aria: tagLabel(n), dot: n }));
+  return names.map((n) => ({ key: n, paise: amounts.get(n) || 0, label: tagLabel(n), aria: tagLabel(n) }));
 }
 
 function chartPane(title, total, chart, back, dotTag) {
   const head = el("div", { class: "pane-head" });
   if (back) {
-    const b = el("button", { type: "button", class: "pane-back", "aria-label": "Back to both charts", text: "\u2039 All" });
+    const b = el("button", { type: "button", class: "pane-back", "aria-label": "Back to both charts", text: "‹ All" });
     b.addEventListener("click", back);
     head.append(b);
   }
   if (dotTag) { const d = el("i", { class: "dot" }); d.style.background = tagDotColor(dotTag); head.append(d); }
   head.append(el("h2", { text: title }));
   if (total !== null) head.append(el("span", { class: "pane-total", text: inr(total) }));
-  const legend = el("div", { class: `heat-legend ${chart.classList.contains("coral") ? "coral" : "teal"}`, "aria-hidden": "true" },
-    "Less", el("i"), el("i"), el("i"), el("i"), el("i"), "More");
-  return el("section", { class: "pane" }, head, chart, legend);
+  const pane = el("section", { class: "pane" }, head, chart);
+  // The month wedges deepen with their size; the legend says so. The radar has no such scale.
+  if (chart.classList.contains("polar")) pane.append(el("div", { class: "heat-legend", "aria-hidden": "true" }, "Less", el("i"), el("i"), el("i"), el("i"), el("i"), "More"));
+  return pane;
 }
 
 async function renderCharts() {
@@ -615,13 +675,13 @@ function drawCharts(months, sums) {
   if (chartFocus?.month) {
     const s = sums[months.indexOf(chartFocus.month)];
     box.replaceChildren(chartPane(monthName(s.month, { month: "long", year: "numeric" }), s.total_paise,
-      barChart(tagRows(tagMap(s.by_tag)), "coral"), back));
+      radarChart(tagRows(tagMap(s.by_tag))), back));
     return;
   }
   if (chartFocus?.tag) {
     const pairs = sums.map((s) => ({ month: s.month, paise: tagMap(s.by_tag).get(chartFocus.tag) || 0 }));
     box.replaceChildren(chartPane(tagLabel(chartFocus.tag), pairs.reduce((n, r) => n + r.paise, 0),
-      barChart(monthRows(pairs), "teal"), back, chartFocus.tag));
+      polarChart(monthRows(pairs)), back, chartFocus.tag));
     return;
   }
 
@@ -629,8 +689,8 @@ function drawCharts(months, sums) {
   const tags = new Map();
   for (const s of sums) for (const t of s.by_tag) tags.set(t.tag, (tags.get(t.tag) || 0) + t.amount_paise);
   box.replaceChildren(
-    chartPane(`By month \u00b7 ${range}`, total, barChart(monthRows(sums.map((s) => ({ month: s.month, paise: s.total_paise }))), "teal", pickMonth)),
-    chartPane("By tag \u00b7 same 12 months", null, barChart(tagRows(tags), "coral", pickTag)));
+    chartPane(`By month \u00b7 ${range}`, total, polarChart(monthRows(sums.map((s) => ({ month: s.month, paise: s.total_paise }))), pickMonth)),
+    chartPane(`By tag \u00b7 ${range}`, null, radarChart(tagRows(tags), pickTag)));
 }
 
 // ---------- recurring (same plain lines) ----------

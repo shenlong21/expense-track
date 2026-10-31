@@ -21,17 +21,22 @@ html { scrollbar-gutter: stable; }                 /* no sideways jump on deskto
 body { min-height: 100vh; min-height: 100dvh; }   /* a view's background fills the screen, not just its content */
 .menu, .toast { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 button, input { font: inherit; color: inherit; }
+/* A select's list is drawn by the browser on white; give its options the view's own colours so they stay readable. */
+select option { background: var(--bg); color: var(--text); }
+@media (prefers-color-scheme: dark) { select { color-scheme: dark; } }   /* the list's frame and highlight go dark too */
+select[data-pointer]:focus-visible { outline: none; }   /* ring only for keyboard focus (set in app.js) */
 button { background: none; border: 0; cursor: pointer; }
 h1, h2 { margin: 0; }
 h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 8px; }
 
 #app { max-width: 560px; margin: 0 auto; padding: 0 16px calc(180px + env(safe-area-inset-bottom)); }
+/* The header belongs to the app, not a view: it spans the app's full width in every view, like the bottom bars. */
 header { position: sticky; top: 0; z-index: 7; background: var(--bg); display: flex; align-items: center;
-  gap: 4px; padding: calc(10px + env(safe-area-inset-top)) 0 10px; }
+  gap: 4px; margin: 0 -16px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; }
 header h1 { flex: 1; font-size: 1.25rem; font-weight: 700; padding-left: 4px; }
 .icon { width: 44px; height: 44px; font-size: 1.7rem; border-radius: 50%; color: var(--text); }
 .icon:active { background: var(--line); }
-.menu { position: absolute; right: 0; top: calc(56px + env(safe-area-inset-top)); background: var(--card);
+.menu { position: absolute; right: 16px; top: calc(56px + env(safe-area-inset-top)); background: var(--card);
   border-radius: 14px; min-width: 170px; overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,.22), inset 0 0 0 1px var(--line); }
 .menu a, .menu button { display: block; width: 100%; text-align: left; padding: 14px 16px; color: var(--text); text-decoration: none; }
@@ -88,8 +93,8 @@ header h1 { flex: 1; font-size: 1.25rem; font-weight: 700; padding-left: 4px; }
 .card-list { background: var(--card); border-radius: 18px; padding: 4px 6px; margin-top: 12px; }
 .card-list .line + .line { box-shadow: 0 -1px 0 var(--line); border-radius: 0; }
 
-/* Charts: the screen is split into two panes (or one when drilled down). A bar's --k (0..1) is how
-   much of its hue is mixed into the card colour, so bigger bars are also deeper. */
+/* Charts: the screen is split into two panes (or one when drilled down). A month wedge's --k (0..1) is
+   how much teal is mixed into the card colour, so bigger months are also deeper. */
 body.on-charts #app { padding-bottom: env(safe-area-inset-bottom); }
 #view-charts:not([hidden]) { display: flex; flex-direction: column; min-height: 440px;
   height: calc(100dvh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
@@ -102,23 +107,23 @@ body.on-charts #app { padding-bottom: env(safe-area-inset-bottom); }
 .pane-back { padding: 5px 12px 5px 9px; border-radius: 999px; font-size: .85rem; font-weight: 600; color: var(--chip-text); background: var(--chip); }
 .pane-back:active { background: var(--line); }
 
-.vbars { --hue: var(--heat); flex: 1; min-height: 0; display: flex; gap: 4px; overflow-x: auto;
-  background: var(--card); border-radius: 16px; padding: 12px 10px 8px; }
-.vbars.coral { --hue: var(--heat2); }
-.vbars .col { flex: 1 0 28px; min-width: 0; display: flex; flex-direction: column; align-items: center; padding: 0; }
-.vbars .barwrap { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
-.vbars .bar { width: 100%; max-width: 34px; min-height: 3px; border-radius: 6px 6px 2px 2px;
-  background: color-mix(in oklab, var(--hue) calc(var(--k) * 100%), var(--card)); transition: height .25s; }
-.vbars .bar.zero { background: color-mix(in oklab, var(--muted) 30%, transparent); }
-.vbars .col:not(:disabled):active .bar { filter: brightness(1.12); }
-.vbars .col:disabled { cursor: default; color: inherit; }
-.vbars .v { font-size: .6rem; color: var(--muted); margin-bottom: 3px; white-space: nowrap; }
-.vbars .m { max-width: 100%; display: flex; flex-direction: column; align-items: center; gap: 3px; margin-top: 6px;
-  font-size: .68rem; color: var(--muted); }
-.vbars .m .t { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.vbars .col.cur .m { color: var(--text); font-weight: 700; }
+.circ { flex: 1; min-height: 0; display: flex; background: var(--card); border-radius: 16px; padding: 4px; }
+.circ svg { width: 100%; height: 100%; overflow: hidden; }   /* tag tap zones stop at the card's edge */
+.circ .grid { fill: none; stroke: color-mix(in oklab, var(--muted) 20%, transparent); }
+.circ .grid.outer { stroke: color-mix(in oklab, var(--muted) 38%, transparent); }
+.circ .lbl { font-size: 11px; fill: var(--muted); pointer-events: none; }   /* taps fall through to the zone or wedge */
+.circ .lbl .cur { fill: var(--text); font-weight: 700; }
+.circ .lbl .amt { font-size: 9.5px; }
+.circ .lbl.tag { font-size: 12px; fill: var(--text); }
+.circ .lbl.tag .amt { font-size: 10.5px; fill: var(--muted); }
+.circ .w { fill: color-mix(in oklab, var(--heat) calc(var(--k) * 100%), var(--card)); }
+.circ .shape { fill: var(--heat2); fill-opacity: .22; stroke: var(--heat2); stroke-width: 2.2; stroke-linejoin: round; pointer-events: none; }
+.circ .pt { stroke: var(--card); stroke-width: 2; pointer-events: none; }
+.circ .zone { fill: transparent; }
+.circ .tap { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+.circ .w.tap:active, .circ .w.tap:focus-visible { filter: brightness(1.15); stroke: var(--text); stroke-width: 1.5; }
+.circ .zone.tap:focus-visible { stroke: var(--heat2); stroke-width: 1.5; stroke-dasharray: 3 3; }   /* keyboard only; a tap shows nothing */
 .heat-legend { --hue: var(--heat); display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 6px; font-size: .7rem; color: var(--muted); }
-.heat-legend.coral { --hue: var(--heat2); }
 .heat-legend i { width: 14px; height: 14px; border-radius: 4px; background: color-mix(in oklab, var(--hue) calc(var(--k) * 100%), var(--card)); }
 .heat-legend i:nth-of-type(1) { --k: .35; margin-left: 4px; } .heat-legend i:nth-of-type(2) { --k: .5; }
 .heat-legend i:nth-of-type(3) { --k: .67; } .heat-legend i:nth-of-type(4) { --k: .83; } .heat-legend i:nth-of-type(5) { --k: 1; margin-right: 4px; }
