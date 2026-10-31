@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="material.css">
   <link rel="stylesheet" href="winui.css">
   <link rel="stylesheet" href="gnome.css">
+  <link rel="stylesheet" href="ios.css">
 </head>
 <body>
   <div id="app" hidden>
@@ -27,6 +28,7 @@
         <button class="switch-view" data-home="material" type="button">Material view</button>
         <button class="switch-view" data-home="winui" type="button">WinUI view</button>
         <button class="switch-view" data-home="gnome" type="button">GNOME view</button>
+        <button class="switch-view" data-home="ios" type="button">iOS view</button>
         <button id="go-charts" type="button">Charts</button>
         <button id="go-tags" type="button">Tags</button>
         <button id="go-recurring" type="button">Recurring</button>
@@ -50,6 +52,8 @@
     <section id="view-winui" class="view" hidden></section>
 
     <section id="view-gnome" class="view" hidden></section>
+
+    <section id="view-ios" class="view" hidden></section>
 
     <section id="view-charts" class="view" hidden>
       <h2>By tag, this month</h2>
@@ -82,6 +86,7 @@
   <script src="material.js"></script>
   <script src="winui.js"></script>
   <script src="gnome.js"></script>
+  <script src="ios.js"></script>
   <script src="tags.js"></script>
 </body>
 </html>

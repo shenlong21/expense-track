@@ -260,10 +260,10 @@ function dayLead(value) {
 }
 
 // ---------- views ----------
-const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", winui: "Expenses", gnome: "Expenses", charts: "Charts", tags: "Tags", recurring: "Recurring" };
+const TITLES = { main: "Expenses", notebook: "Expenses", material: "Expenses", winui: "Expenses", gnome: "Expenses", ios: "Expenses", charts: "Charts", tags: "Tags", recurring: "Recurring" };
 
-// The home screen is the list UI ("main"), the notebook, the Material, WinUI or GNOME view; the choice is remembered.
-const HOMES = ["main", "notebook", "material", "winui", "gnome"];
+// The home screen is the list UI ("main"), the notebook, the Material, WinUI, GNOME or iOS view; the choice is remembered.
+const HOMES = ["main", "notebook", "material", "winui", "gnome", "ios"];
 const homeView = () => { const h = localStorage.getItem("home"); return HOMES.includes(h) ? h : "main"; };
 
 async function show(name) {
@@ -275,6 +275,7 @@ async function show(name) {
   document.body.classList.toggle("mat", name === "material");
   document.body.classList.toggle("win", name === "winui");
   document.body.classList.toggle("gnm", name === "gnome");
+  document.body.classList.toggle("ios", name === "ios");
   for (const b of document.querySelectorAll(".switch-view")) b.hidden = b.dataset.home === homeView();
   try {
     if (name === "main") { buildEntry(); await renderMain(); }
@@ -282,6 +283,7 @@ async function show(name) {
     else if (name === "material") await renderMaterial();
     else if (name === "winui") await renderWinui();
     else if (name === "gnome") await renderGnome();
+    else if (name === "ios") await renderIos();
     else if (name === "charts") await renderCharts();
     else if (name === "tags") await renderTags();
     else { buildRecurringEntry(); await renderRecurring(); }

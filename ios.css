@@ -1,0 +1,80 @@
+/* ---------- iOS view: Apple look (system font, grouped inset lists, translucent bars, bottom sheet, compose bar) ---------- */
+body.ios {
+  --bg: #f2f2f7; --card: #fff; --text: #000; --muted: #8a8a8e; --line: rgba(60,60,67,.18);
+  --accent: #007aff; --accent-text: #fff; --danger: #ff3b30;
+  --i-fill: rgba(118,118,128,.12); --i-bar: rgba(249,249,249,.84);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  body.ios {
+    --bg: #000; --card: #1c1c1e; --text: #fff; --muted: #98989f; --line: rgba(84,84,88,.55);
+    --accent: #0a84ff; --accent-text: #fff; --danger: #ff453a;
+    --i-fill: rgba(118,118,128,.24); --i-bar: rgba(30,30,30,.84);
+  }
+}
+/* navigation bar: translucent, centred semibold title */
+body.ios header { background: var(--i-bar); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  margin: 0 -16px; padding-left: 16px; padding-right: 16px; box-shadow: 0 .5px 0 var(--line); }
+body.ios header h1 { text-align: center; font-size: 1.06rem; font-weight: 600; padding-left: 44px; }
+body.ios .icon { color: var(--accent); }
+body.ios .menu { border-radius: 14px; background: var(--i-bar); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 30px rgba(0,0,0,.2); }
+body.ios .menu > * + * { box-shadow: 0 -.5px 0 var(--line); }
+
+.i-card { margin-top: 14px; padding: 16px 18px 18px; background: var(--card); border-radius: 12px; }
+.i-cardtop { display: flex; justify-content: space-between; align-items: center; }
+.i-label { font-size: .85rem; color: var(--muted); }
+.i-month { appearance: none; border: 0; background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23007aff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right center;
+  color: var(--accent); font-size: 1rem; font-weight: 500; padding: 4px 16px 4px 0; max-width: 60%; }
+.i-month:focus-visible { outline: 2px solid var(--accent); border-radius: 6px; }
+.i-big { font: 700 2.5rem/1.15 ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; margin: 6px 0 2px; letter-spacing: -.01em; }
+
+.i-sechead { display: flex; justify-content: space-between; margin: 22px 16px 6px; font-size: .8rem; text-transform: uppercase; color: var(--muted); }
+.i-group { background: var(--card); border-radius: 10px; overflow: hidden; }
+.i-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 14px 8px 16px; text-align: left; position: relative; }
+.i-row + .i-row::before { content: ""; position: absolute; top: 0; left: 58px; right: 0; height: .5px; background: var(--line); }
+.i-row:active { background: var(--i-fill); }
+.i-icon { flex: none; width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center; color: #fff; font-weight: 600; font-size: .95rem; text-transform: uppercase; }
+.i-text { flex: 1; min-width: 0; }
+.i-title { font-size: 1.06rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.i-sub { font-size: .8rem; color: var(--muted); }
+.i-val { font-size: 1.06rem; font-variant-numeric: tabular-nums; }
+.i-chev { color: var(--line); font-size: 1.5rem; line-height: 1; margin-left: -2px; font-weight: 600; }
+.i-empty { text-align: center; color: var(--muted); padding: 36px 0 8px; }
+.i-empty-title { font-size: 1.3rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+
+/* edit sheet */
+.i-backdrop { position: fixed; inset: 0; z-index: 15; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; justify-content: center;
+  animation: i-fade .2s ease-out; }
+.i-sheet { width: 100%; max-width: 560px; max-height: 90%; overflow-y: auto; margin-bottom: var(--kb, 0px); background: var(--bg); color: var(--text);
+  border-radius: 14px 14px 0 0; padding-bottom: calc(14px + env(safe-area-inset-bottom)); animation: i-up .3s cubic-bezier(.2,.9,.3,1);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif; }
+.i-grab { width: 36px; height: 5px; border-radius: 3px; background: var(--line); margin: 6px auto 0; }
+.i-navbar { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 6px; }
+.i-navtitle { font-weight: 600; }
+.i-nav { min-width: 64px; height: 40px; padding: 0 8px; color: var(--accent); font-size: 1.06rem; }
+.i-nav.bold { font-weight: 600; text-align: right; }
+.i-sheetbody { padding: 4px 16px 0; }
+.i-sheetbody .i-sechead { margin: 18px 16px 6px; }
+.i-cell { padding: 0 16px; }
+.i-field { width: 100%; height: 46px; border: 0; background: transparent; font-size: 1.06rem; color: var(--text); }
+.i-field:focus { outline: 0; }
+.i-sheetbody .tagrow { padding: 4px 2px 8px; flex-wrap: wrap; overflow: visible; }
+.i-delete { display: block; width: 100%; height: 48px; margin-top: 22px; border-radius: 10px; background: var(--card); color: var(--danger); font-size: 1.06rem; }
+.i-delete:active { background: var(--i-fill); }
+@keyframes i-up { from { transform: translateY(100%); } }
+@keyframes i-fade { from { opacity: 0; } }
+
+/* compose bar */
+.i-bar { position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); z-index: 6; max-width: 560px; margin: 0 auto;
+  padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px;
+  background: var(--i-bar); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8); box-shadow: 0 -.5px 0 var(--line); }
+.i-bar .tagrow { padding: 0 2px; }
+.i-barrow { display: flex; align-items: center; gap: 8px; }
+.i-compose { flex: 1; min-width: 0; height: 36px; padding: 0 14px; border: 0; border-radius: 18px; color: var(--text); background: var(--card);
+  box-shadow: inset 0 0 0 .5px var(--line); font-size: 1.06rem; }
+.i-compose:focus { outline: 0; box-shadow: inset 0 0 0 1px var(--accent); }
+.i-compose::placeholder { color: var(--muted); }
+.i-send { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 1.1rem; font-weight: 700; line-height: 1; }
+.i-send:active { filter: brightness(.85); }
+body.ios .tagbadge { font-weight: 500; }
