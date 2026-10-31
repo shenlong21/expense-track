@@ -14,11 +14,11 @@ body.ios {
 }
 /* navigation bar: translucent, centred semibold title */
 body.ios header { background: var(--i-bar); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  margin: 0 -16px; padding-left: 16px; padding-right: 16px; box-shadow: 0 .5px 0 var(--line); }
+  box-shadow: 0 .5px 0 var(--line); border-radius: 0 0 16px 16px; }
 body.ios header h1 { text-align: center; font-size: 1.06rem; font-weight: 600; padding-left: 44px; }
 body.ios .icon { color: var(--accent); }
 
-.i-card { margin-top: 14px; padding: 16px 18px 18px; background: var(--card); border-radius: 12px; }
+.i-card { margin: 14px -16px 0; padding: 16px 16px 18px; background: var(--card); border-radius: 16px; }   /* full width, like the header and compose bar */
 .i-cardtop { display: flex; justify-content: space-between; align-items: center; }
 .i-label { font-size: .85rem; color: var(--muted); }
 .i-month { appearance: none; border: 0; background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23007aff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right center;
@@ -26,8 +26,9 @@ body.ios .icon { color: var(--accent); }
 .i-month:focus-visible { outline: 2px solid var(--accent); border-radius: 6px; }
 .i-big { font: 700 2.5rem/1.15 ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; margin: 6px 0 2px; letter-spacing: -.01em; }
 
-.i-sechead { display: flex; justify-content: space-between; margin: 22px 16px 6px; font-size: .8rem; text-transform: uppercase; color: var(--muted); }
+.i-sechead { display: flex; justify-content: space-between; margin: 22px 0 6px; font-size: .8rem; text-transform: uppercase; color: var(--muted); }
 .i-group { background: var(--card); border-radius: 10px; overflow: hidden; }
+#view-ios .i-group { margin: 0 -16px; border-radius: 14px; }   /* the list runs full width; groups in the edit sheet stay inset */
 .i-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 14px 8px 16px; text-align: left; position: relative; }
 .i-row + .i-row::before { content: ""; position: absolute; top: 0; left: 58px; right: 0; height: .5px; background: var(--line); }
 .i-row:active { background: var(--i-fill); }
@@ -65,7 +66,7 @@ body.ios .icon { color: var(--accent); }
 /* compose bar */
 .i-bar { position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); z-index: 6; max-width: 560px; margin: 0 auto;
   padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px;
-  background: var(--i-solid); box-shadow: 0 -.5px 0 var(--line); }
+  background: var(--i-solid); box-shadow: 0 -.5px 0 var(--line); border-radius: 16px 16px 0 0; }
 .i-bar .tagrow { padding: 0 2px; }
 .i-barrow { display: flex; align-items: center; gap: 8px; }
 .i-compose { flex: 1; min-width: 0; height: 36px; padding: 0 14px; border: 0; border-radius: 18px; color: var(--text); background: var(--card);
