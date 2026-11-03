@@ -76,3 +76,9 @@ body.ios .icon { color: var(--accent); }
 .i-send { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 1.1rem; font-weight: 700; line-height: 1; }
 .i-send:active { filter: brightness(.85); }
 body.ios .tagbadge { font-weight: 500; }
+
+/* toast: a translucent banner like the bars, with the system-blue action */
+body.ios .toast { background: var(--i-bar); color: var(--text); border-radius: 14px; font-size: .94rem;
+  backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  box-shadow: 0 0 0 .5px var(--line), 0 8px 24px rgba(0,0,0,.16); }
+body.ios .toast button { color: var(--accent); font-weight: 600; filter: none; }

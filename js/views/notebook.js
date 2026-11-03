@@ -181,7 +181,7 @@ function ensureMonth(ym) {
   return group;
 }
 
-// Every page is laid out with a section per tag, ready to write in, like a notes template.
+// Every page is laid out with a section per tag (but Recurring), ready to write in, like a notes template.
 function ensureDay(date) {
   let page = nb.pages.get(date);
   if (page) return page;
@@ -202,7 +202,8 @@ function ensureDay(date) {
   const siblings = [...month.querySelectorAll(":scope > .d-page")];
   const before = siblings.find((p) => p.dataset.date < date);
   if (before) before.before(node); else month.append(node);
-  for (const [name] of TAGS) ensureSection(page, name);
+  // Recurring payments are written in for you, so their section only appears on days that have one.
+  for (const [name] of TAGS) if (name !== RECURRING_TAG) ensureSection(page, name);
   ensureSection(page, MISC);
   return page;
 }
@@ -244,8 +245,8 @@ function fit(section) {
 }
 
 // What you see is a copy of the text drawn under the (see-through) text box: written lines show
-// the amount over on the right, while the line you are on shows exactly what you typed. The copy
-// keeps every character in place (the moved amount is only hidden), so the lines wrap the same.
+// the amount on the right of their first row, while the line you are on shows exactly what you typed.
+// Each formatted line keeps the height its plain text has in the box, so the lines stay lined up.
 function drawMirror(section) {
   const a = section.area;
   let from = -1, to = -1;
@@ -253,17 +254,33 @@ function drawMirror(section) {
     from = a.value.slice(0, a.selectionStart).split("\n").length - 1;
     to = a.value.slice(0, a.selectionEnd).split("\n").length - 1;
   }
-  section.mirror.replaceChildren(...a.value.split("\n").map((line, i) => {
-    const spot = i >= from && i <= to ? null : amountSpot(line);
-    if (!spot) return el("div", { class: "d-ml", text: line || "\u200b" });
-    return el("div", { class: "d-ml" }, line.slice(0, spot.start),
-      el("span", { class: spot.start ? "d-hide" : "d-hide lead", text: line.slice(spot.start, spot.end) }), line.slice(spot.end),
-      el("span", { class: "d-mamt", text: inr(spot.paise) }));
-  }));
-  // "25 water can": the amount leaves a gap in front; close it when the line fits on one row anyway.
-  for (const hide of section.mirror.querySelectorAll(".d-hide.lead")) {
-    if (hide.parentElement.offsetHeight <= LINE) hide.remove();
-  }
+  const lines = a.value.split("\n");
+  const rows = lines.map((line) => el("div", { class: "d-ml", text: line || "\u200b" }));
+  section.mirror.replaceChildren(...rows);
+  // The plain rows above wrap exactly like the text box; read their heights before formatting.
+  const spots = lines.map((line, i) => (i >= from && i <= to ? null : amountSpot(line)));
+  const raw = rows.map((row, i) => (spots[i] ? row.offsetHeight : 0));
+  lines.forEach((line, i) => {
+    const spot = spots[i];
+    if (!spot) return;
+    const amt = inr(spot.paise);
+    const hidden = (lead) => el("span", { class: lead ? "d-hide lead" : "d-hide", text: line.slice(spot.start, spot.end) });
+    // Amount on the right of the row the line starts on; a trailing amount is dropped from the
+    // text so it can't push the words onto an extra row.
+    const top = el("div", { class: "d-ml" }, el("span", { class: "d-mamt", text: amt }), line.slice(0, spot.start),
+      ...(spot.end < line.length ? [hidden(!spot.start), line.slice(spot.end)] : []));
+    section.mirror.replaceChild(top, rows[i]);
+    if (top.offsetHeight <= raw[i]) {
+      top.style.minHeight = `${raw[i]}px`;
+      const lead = top.querySelector(".d-hide.lead");
+      if (lead && raw[i] <= LINE) lead.remove(); // "25 water can": close the gap when it fits one row
+      return;
+    }
+    // Rare: the amount on the first row would take an extra row; keep it at the end instead.
+    const end = el("div", { class: "d-ml" }, line.slice(0, spot.start), hidden(!spot.start), line.slice(spot.end),
+      el("span", { class: "d-mamt end", text: amt }));
+    section.mirror.replaceChild(end, top);
+  });
 }
 document.addEventListener("selectionchange", () => {
   const a = document.activeElement;
@@ -312,10 +329,10 @@ function wireArea(section) {
   a.addEventListener("input", (e) => {
     fit(section);
     updateTotals();
-    if (e.inputType === "insertLineBreak" || e.inputType === "insertParagraph") flush(section);
+    if (e.inputType === "insertLineBreak" || e.inputType === "insertParagraph") flush(section, true);
     else schedule(section);
   });
-  a.addEventListener("blur", () => { drawMirror(section); flush(section); });
+  a.addEventListener("blur", () => { drawMirror(section); flush(section, true); });
   a.addEventListener("focus", () => drawMirror(section));
   a.addEventListener("keydown", (e) => {
     const v = a.value, pos = a.selectionStart;
@@ -348,13 +365,15 @@ function schedule(section) {
   section.timer = setTimeout(() => flush(section), 1200);
 }
 
-function flush(section) {
+// The pause timer saves quietly; "Saved" is shown once you are done with the line (Enter, leaving
+// the paper, or leaving the app), not on every pause while typing.
+function flush(section, announce = false) {
   clearTimeout(section.timer);
   nb.dirty.delete(section);
-  section.chain = section.chain.then(() => save(section)).catch((err) => { if (err.message !== "Signed out") toast(err.message); });
+  section.chain = section.chain.then(() => save(section, announce)).catch((err) => { if (err.message !== "Signed out") toast(err.message); });
 }
 // Leaving the app saves what is still waiting.
-document.addEventListener("visibilitychange", () => { if (document.hidden) for (const s of [...nb.dirty]) flush(s); });
+document.addEventListener("visibilitychange", () => { if (document.hidden) for (const s of [...nb.dirty]) flush(s, true); });
 
 function appendLine(section, text) {
   const a = section.area;
@@ -363,7 +382,7 @@ function appendLine(section, text) {
 }
 
 // Brings the stored expenses in line with what is written on the section's paper.
-async function save(section) {
+async function save(section, announce = false) {
   const a = section.area;
   // "#food" lines go over to that tag first.
   const lines = a.value.split("\n");
@@ -376,7 +395,7 @@ async function save(section) {
     if (mark.key === section.key || !mark.text) { kept.push(mark.text); continue; }
     const target = ensureSection(section.page, mark.key);
     appendLine(target, mark.text);
-    flush(target);
+    flush(target, true);
   }
   if (moved) {
     const caret = Math.min(a.selectionStart, kept.join("\n").length);
@@ -408,8 +427,8 @@ async function save(section) {
     const w = wanted[i], rec = pairs[i];
     const body = { name: w.name, amount: amountText(w.paise), date: section.page.date, note: rec ? rec.note : "", tags: rec ? rec.tags : section.tag ? [section.tag] : [] };
     try {
-      if (!rec) records.push(await api("POST", "/api/expenses", body));
-      else if (rec.name !== w.name || rec.amount_paise !== w.paise) records.push(await api("PUT", `/api/expenses/${rec.id}`, body));
+      if (!rec) { records.push(await api("POST", "/api/expenses", body)); section.unsaid = true; }
+      else if (rec.name !== w.name || rec.amount_paise !== w.paise) { records.push(await api("PUT", `/api/expenses/${rec.id}`, body)); section.unsaid = true; }
       else records.push(rec);
     } catch (err) {
       if (rec) records.push(rec);
@@ -429,5 +448,8 @@ async function save(section) {
       flush(section);
       await section.chain;
     });
+  } else if (announce && section.unsaid) {
+    savedToast(section.tag ? [section.tag] : []);
   }
+  if (announce) section.unsaid = false;
 }

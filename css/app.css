@@ -1,13 +1,14 @@
 /* The main theme. Views (notebook, Material, WinUI, iOS) may restyle their own screen, but the shared
-   parts of the app - the menu and the toasts here, and the Charts, Tags and Recurring screens - always
-   use this theme, so the menu and toasts set it again on themselves. */
-:root, .menu, .toast {
+   parts of the app - the menu here, and the Charts, Tags and Recurring screens - always use this theme,
+   so the menu sets it again on itself. Toasts take the look of the screen they show on: a view's own
+   toast on that view, this theme everywhere else. */
+:root, .menu {
   --bg: #f7f8f9; --card: #eef0f2; --text: #14181f; --muted: #7a8290; --line: rgba(20,24,31,.07);
   --accent: #0f766e; --accent-text: #fff; --danger: #c0392b; --chip: #e7f3f1; --chip-text: #0b5a53;
   --heat: #0f766e; --heat-ink: #fff; --heat2: #c4462b; --heat2-ink: #fff;   /* teal and its complement, coral */
 }
 @media (prefers-color-scheme: dark) {
-  :root, .menu, .toast {
+  :root, .menu {
     --bg: #0e1116; --card: #151a21; --text: #e8ebf0; --muted: #7d8696; --line: rgba(255,255,255,.06);
     --accent: #2dd4bf; --accent-text: #04201d; --danger: #f07167; --chip: #17302e; --chip-text: #8ae9dc;
     --heat: #2dd4bf; --heat-ink: #04201d; --heat2: #ff8a70; --heat2-ink: #2a0e07;
@@ -19,7 +20,7 @@ html, body { margin: 0; background: var(--bg); color: var(--text);
   font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 html { scrollbar-gutter: stable; }                 /* no sideways jump on desktop when a screen stops scrolling */
 body { min-height: 100vh; min-height: 100dvh; }   /* a view's background fills the screen, not just its content */
-.menu, .toast { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.menu { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 button, input { font: inherit; color: inherit; }
 /* A select's list is drawn by the browser on white; give its options the view's own colours so they stay readable. */
 select option { background: var(--bg); color: var(--text); }
@@ -140,6 +141,10 @@ body.on-charts #app { padding-bottom: env(safe-area-inset-bottom); }
   display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); background: var(--text); color: var(--bg);
   padding: 12px 16px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
 .toast button { color: var(--accent); font-weight: 700; filter: brightness(.8); }
+/* notebook: a slip of the same paper, inked, with the red stamp for Undo */
+body.nb .toast { background: var(--paper); color: var(--ink); border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--stroke, var(--rule)), 0 6px 18px rgba(0, 0, 0, .18); }
+body.nb .toast button { color: var(--stamp); filter: none; }
 
 /* ---------- notebook view: ruled pages, one per day, standard font ---------- */
 body.nb {
@@ -186,7 +191,8 @@ body.nb .menu { z-index: 21; }
 .d-mirror { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: var(--ink); }
 .d-ml { position: relative; padding: 0 16px; line-height: 38px; white-space: pre-wrap; overflow-wrap: break-word; }
 .d-hide { visibility: hidden; }
-.d-mamt { position: absolute; right: 16px; bottom: 1px; line-height: 37px;
+.d-mamt.end { float: none; position: absolute; right: 16px; top: auto; bottom: 1px; margin: 0; line-height: 37px; }
+.d-mamt { float: right; position: relative; top: -1px; margin-left: 12px;
   font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .d-area { position: relative; display: block; width: 100%; min-height: 38px; padding: 0 16px; margin: 0; resize: none; overflow: hidden;
   border: 0; border-radius: 0; outline: 0; background: transparent; color: transparent;

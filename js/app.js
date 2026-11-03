@@ -47,7 +47,10 @@ function parseAmount(text) {
 // The tags offered while typing an expense. Each has its own colour, used on badges and in the charts.
 const BASE_TAGS = [
   ["rent", "#7c5cff"], ["groceries", "#2e9e5b"], ["travel", "#1f8ef1"], ["shopping", "#e0489b"], ["food", "#f08a24"],
+  ["recurring", "#5f7d95"],
 ];
+// The tag new recurring expenses get. The notebook shows its section only on days that have entries in it.
+const RECURRING_TAG = "recurring";
 // Tags you add yourself are kept on this phone, each with the next colour from this palette.
 const TAG_PALETTE = ["#00a5a8", "#c239b3", "#d13438", "#6b8e23", "#ca5010", "#0099bc", "#8e8cd8", "#986f0b"];
 const validTags = (v) => (Array.isArray(v) ? v.filter((t) => Array.isArray(t) && typeof t[0] === "string" && /^#[0-9a-f]{6}$/i.test(t[1])) : []);
@@ -61,6 +64,13 @@ const TAGS = (() => {
 function saveTags() {
   try { localStorage.setItem("tagList", JSON.stringify(TAGS)); } catch { /* storage full */ }
 }
+// Phones that already had a tag list get the Recurring tag once; deleting it afterwards is respected.
+try {
+  if (!localStorage.getItem("recurringTagSeeded")) {
+    if (!TAGS.some(([n]) => n === RECURRING_TAG)) { TAGS.push(BASE_TAGS.find(([n]) => n === RECURRING_TAG)); saveTags(); }
+    localStorage.setItem("recurringTagSeeded", "1");
+  }
+} catch { /* storage blocked */ }
 const nextTagColor = () => TAG_PALETTE.find((c) => !TAGS.some((t) => t[1] === c)) || TAG_PALETTE[TAGS.length % TAG_PALETTE.length];
 
 // "  Pets " -> "pets"; null if it is not a valid tag name.
@@ -150,7 +160,7 @@ function tagPicker(initial = null, onChange) {
     get value() { return value ? [value] : []; },
     get editing() { return editing; },
     sync(text) { node.hidden = !text.trim(); },
-    reset() { value = null; paint(); node.hidden = true; },
+    reset() { value = initial; paint(); node.hidden = true; },
   };
 }
 
@@ -201,6 +211,11 @@ function toast(msg, actionLabel, action) {
   toastTimer = setTimeout(hideToast, actionLabel ? 7000 : 4000);
 }
 function hideToast() { $("toast").hidden = true; }
+// After adding an expense: "Saved to Food", or just "Saved" when it has no tag.
+function savedToast(tags) {
+  const tag = (tags || []).find(isKnownTag);
+  toast(tag ? `Saved to ${tagLabel(tag)}` : "Saved");
+}
 
 // ---------- data ----------
 // Everything is stored on this phone (see local.js); there is no server and no login.
@@ -410,9 +425,10 @@ function buildEntry() {
     if (!parsed) { if (input.value.trim()) toast("Add an amount, like: chai 25"); return; }
     saving = true;
     try {
-      await api("POST", "/api/expenses", {
+      const rec = await api("POST", "/api/expenses", {
         name: parsed.name, amount: amountText(parsed.paise), date: lead.value, tags: picker.value,
       });
+      savedToast(rec.tags);
     } catch (err) {
       saving = false;
       toast(err.message);
@@ -720,7 +736,7 @@ function buildRecurringEntry() {
   const lead = dayLead(null);
   const name = nameInput("");
   const amount = amountInput(null);
-  const picker = tagPicker();
+  const picker = tagPicker(isKnownTag(RECURRING_TAG) ? RECURRING_TAG : null);
   let saving = false;
 
   async function trySave() {
@@ -728,9 +744,10 @@ function buildRecurringEntry() {
     if (saving || picker.editing || !name.value.trim() || paise === null || lead.value === null) return;
     saving = true;
     try {
-      await api("POST", "/api/recurring", {
+      const rec = await api("POST", "/api/recurring", {
         name: name.value.trim(), amount: amountText(paise), day: lead.value, note: "", tags: picker.value, active: true,
       });
+      savedToast(rec.tags);
     } catch (err) {
       saving = false;
       toast(err.message);

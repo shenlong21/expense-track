@@ -146,7 +146,8 @@ function iosBar() {
     if (!parsed) { if (input.value.trim()) toast("Add an amount, like: chai 25"); return; }
     saving = true;
     try {
-      await api("POST", "/api/expenses", { name: parsed.name, amount: amountText(parsed.paise), date: todayStr(), tags: picker.value });
+      const rec = await api("POST", "/api/expenses", { name: parsed.name, amount: amountText(parsed.paise), date: todayStr(), tags: picker.value });
+      savedToast(rec.tags);
     } catch (err) { saving = false; toast(err.message); return; }
     picker.reset();
     ios.ym = currentYm();

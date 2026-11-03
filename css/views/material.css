@@ -54,3 +54,12 @@ body.mat header { background: var(--bg); }
 
 .m-item { flex-wrap: wrap; }
 .m-item .tagrow { flex-basis: 100%; padding: 0 0 6px 54px; }
+
+/* snackbar: inverse surface, small corners, inverse-primary action */
+body.mat .toast { background: #313033; color: #f4eff4; border-radius: 4px; min-height: 48px; padding: 14px 16px;
+  box-shadow: 0 3px 5px rgba(0,0,0,.2), 0 1px 18px rgba(0,0,0,.12); font-size: .875rem; }
+body.mat .toast button { color: #bec2ff; font-weight: 500; letter-spacing: .01em; filter: none; }
+@media (prefers-color-scheme: dark) {
+  body.mat .toast { background: #e4e1e9; color: #313033; }
+  body.mat .toast button { color: #4f5bd5; }
+}
