@@ -133,6 +133,7 @@ function winBar() {
   });
   const btn = el("button", { type: "button", class: "w-accent", text: "Add" });
   const picker = tagPicker();
+  const when = barDate();
   let saving = false;
   const add = async () => {
     if (saving) return;
@@ -140,12 +141,11 @@ function winBar() {
     if (!parsed) { if (input.value.trim()) toast("Add an amount, like: chai 25"); return; }
     saving = true;
     try {
-      const rec = await api("POST", "/api/expenses", { name: parsed.name, amount: amountText(parsed.paise), date: todayStr(), tags: picker.value });
+      const rec = await api("POST", "/api/expenses", { name: parsed.name, amount: amountText(parsed.paise), date: when.value, tags: picker.value });
       savedToast(rec.tags);
     } catch (err) { saving = false; toast(err.message); return; }
     picker.reset();
-    win.ym = currentYm();
-    if (!win.months.includes(win.ym)) win.months.unshift(win.ym);
+    showMonthOf(win, when.value);
     saving = false;
     await drawWinui();
     $("view-winui").querySelector(".w-field").focus();
@@ -154,5 +154,5 @@ function winBar() {
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } });
   btn.addEventListener("mousedown", (e) => e.preventDefault());   // keep the keyboard up
   btn.addEventListener("click", add);
-  return el("div", { class: "w-bar" }, picker.node, el("div", { class: "w-barrow" }, input, btn));
+  return el("div", { class: "w-bar" }, picker.node, el("div", { class: "w-barrow" }, when.node, input, btn));
 }

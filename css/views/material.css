@@ -63,3 +63,15 @@ body.mat .toast button { color: #bec2ff; font-weight: 500; letter-spacing: .01em
   body.mat .toast { background: #e4e1e9; color: #313033; }
   body.mat .toast button { color: #4f5bd5; }
 }
+
+/* the entry date: "Today", or the picked day in the primary colour */
+.m-row .bardate { flex: none; display: flex; align-items: center; height: 56px; padding: 0 16px; border-radius: 16px;
+  background: var(--m-surface3); color: var(--muted); font-size: .85rem; font-weight: 600; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.m-row .bardate.past { background: var(--m-container); color: var(--m-on-container); }
+/* calendar: Material 3 date picker - large rounded surface, tonal today, filled selection */
+body.mat .cal { border-radius: 28px; padding: 18px 14px 14px; background: var(--m-surface2); box-shadow: 0 8px 28px rgba(0,0,0,.24); }
+body.mat .cal-title { font-weight: 500; font-size: 1.05rem; }
+body.mat .cal-day.today { box-shadow: inset 0 0 0 1px var(--m-primary); font-weight: 500; }
+body.mat .cal-quick { border-radius: 20px; font-weight: 500; background: transparent; }
+body.mat .cal-quick.on { background: var(--m-container); color: var(--m-on-container); }
+body.mat .cal-foot { border-top: 0; }

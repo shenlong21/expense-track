@@ -80,3 +80,20 @@ body.win .tagbadge.pick { padding: 4px 10px; }
 body.win .toast { background: var(--card); color: var(--text); border-radius: 8px; padding: 12px 16px; font-size: .875rem;
   box-shadow: inset 0 0 0 1px var(--w-stroke), 0 8px 16px rgba(0,0,0,.14); }
 body.win .toast button { color: var(--accent); font-weight: 600; filter: none; }
+
+/* the entry date: "Today", or the picked day in the accent colour */
+.w-barrow .bardate { flex: none; display: flex; align-items: center; height: 40px; padding: 0 12px; border-radius: 4px; background: var(--w-control);
+  box-shadow: inset 0 0 0 1px var(--w-control-stroke); color: var(--muted); font-size: .85rem; white-space: nowrap; }
+.w-barrow .bardate.past { color: var(--accent); font-weight: 600; }
+/* calendar: Fluent CalendarView flyout - 8px corners, 1px stroke, accent ring for today */
+body.win .cal { border-radius: 8px; padding: 12px 10px 10px; box-shadow: inset 0 0 0 1px var(--w-stroke), 0 8px 16px rgba(0,0,0,.14); }
+body.win .cal-title { font-weight: 600; font-size: .95rem; }
+body.win .cal-nav { border-radius: 4px; font-size: 1.2rem; color: var(--text); }
+body.win .cal-nav:not(:disabled):active, body.win .cal-day:not(:disabled):hover { background: var(--w-hover); }
+body.win .cal-day { font-size: .875rem; }
+body.win .cal-day.today { background: var(--accent); color: var(--accent-text); box-shadow: none; font-weight: 600; }
+body.win .cal-day.on { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+body.win .cal-day.on.today { background: var(--accent); color: var(--accent-text); box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px var(--card); }
+body.win .cal-quick { border-radius: 4px; color: var(--text); background: var(--w-control); box-shadow: inset 0 0 0 1px var(--w-control-stroke); font-weight: 400; }
+body.win .cal-quick.on { background: var(--accent); color: var(--accent-text); box-shadow: none; }
+body.win .cal-foot { border-top-color: var(--w-stroke); }

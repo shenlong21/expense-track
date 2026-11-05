@@ -139,6 +139,7 @@ function iosBar() {
   });
   const send = el("button", { type: "button", class: "i-send", "aria-label": "Add expense", text: "↑" });
   const picker = tagPicker();
+  const when = barDate();
   let saving = false;
   const add = async () => {
     if (saving) return;
@@ -146,12 +147,11 @@ function iosBar() {
     if (!parsed) { if (input.value.trim()) toast("Add an amount, like: chai 25"); return; }
     saving = true;
     try {
-      const rec = await api("POST", "/api/expenses", { name: parsed.name, amount: amountText(parsed.paise), date: todayStr(), tags: picker.value });
+      const rec = await api("POST", "/api/expenses", { name: parsed.name, amount: amountText(parsed.paise), date: when.value, tags: picker.value });
       savedToast(rec.tags);
     } catch (err) { saving = false; toast(err.message); return; }
     picker.reset();
-    ios.ym = currentYm();
-    if (!ios.months.includes(ios.ym)) ios.months.unshift(ios.ym);
+    showMonthOf(ios, when.value);
     saving = false;
     await drawIos();
     $("view-ios").querySelector(".i-compose").focus();
@@ -160,5 +160,5 @@ function iosBar() {
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } });
   send.addEventListener("mousedown", (e) => e.preventDefault());   // keep the keyboard up
   send.addEventListener("click", add);
-  return el("div", { class: "i-bar" }, picker.node, el("div", { class: "i-barrow" }, input, send));
+  return el("div", { class: "i-bar" }, picker.node, el("div", { class: "i-barrow" }, when.node, input, send));
 }

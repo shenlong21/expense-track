@@ -47,7 +47,7 @@ function parseAmount(text) {
 // The tags offered while typing an expense. Each has its own colour, used on badges and in the charts.
 const BASE_TAGS = [
   ["rent", "#7c5cff"], ["groceries", "#2e9e5b"], ["travel", "#1f8ef1"], ["shopping", "#e0489b"], ["food", "#f08a24"],
-  ["recurring", "#5f7d95"],
+  ["recurring", "#13b5b1"],
 ];
 // The tag new recurring expenses get. The notebook shows its section only on days that have entries in it.
 const RECURRING_TAG = "recurring";
@@ -70,6 +70,10 @@ try {
     if (!TAGS.some(([n]) => n === RECURRING_TAG)) { TAGS.push(BASE_TAGS.find(([n]) => n === RECURRING_TAG)); saveTags(); }
     localStorage.setItem("recurringTagSeeded", "1");
   }
+  // The Recurring tag's earlier colours (grey-blue, too close to Miscellaneous; amber, too close to Food)
+  // move to teal, unless it was recoloured on the Tags screen.
+  const rec = TAGS.find(([n, c]) => n === RECURRING_TAG && ["#5f7d95", "#d4a21a"].includes(c.toLowerCase()));
+  if (rec) { rec[1] = BASE_TAGS.find(([n]) => n === RECURRING_TAG)[1]; saveTags(); }
 } catch { /* storage blocked */ }
 const nextTagColor = () => TAG_PALETTE.find((c) => !TAGS.some((t) => t[1] === c)) || TAG_PALETTE[TAGS.length % TAG_PALETTE.length];
 
@@ -290,18 +294,108 @@ function amountInput(paise) {
   return i;
 }
 
-// Shows "31 Oct"; a transparent native date input on top opens the picker.
+// Shows "31 Oct"; tapping it opens the calendar below. The picked date is kept in a hidden input,
+// which fires "change" like a date field would.
 function dateLead(value) {
   const label = el("span", { text: shortDate(value) });
-  const input = el("input", { type: "date", "aria-label": "Date", min: "2000-01-01", max: "2100-12-31" });
+  const input = el("input", { type: "hidden" });
   input.value = value;
-  input.addEventListener("click", () => { try { input.showPicker(); } catch { /* unsupported */ } });
-  const wrap = el("label", { class: "datechip" }, label, input);
+  const wrap = el("button", { type: "button", class: "datechip", "aria-label": "Date", "aria-haspopup": "dialog" }, label);
+  wrap.addEventListener("mousedown", (e) => e.preventDefault());   // keep the keyboard where it is
+  wrap.addEventListener("click", () => openCalendar(wrap, input.value, (v) => {
+    if (v === input.value) return;
+    input.value = v;
+    input.dispatchEvent(new Event("change"));
+  }));
   return {
     node: wrap, input,
     get value() { return input.value; },
     set value(v) { input.value = v; label.textContent = shortDate(v); },
   };
+}
+
+// ---------- calendar ----------
+// A small month calendar that floats by the date it was opened from. It takes the colours of the
+// screen it opens on (--card, --text, --muted, --accent), and each view rounds it its own way (css).
+// Days after today can't be picked: an expense is something already spent.
+function openCalendar(anchor, value, onPick) {
+  document.querySelector(".cal-wrap")?.remove();
+  const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const today = todayStr();
+  const [vy, vm] = (value || today).split("-").map(Number);
+  let shown = new Date(vy, vm - 1, 1);
+
+  const title = el("div", { class: "cal-title", "aria-live": "polite" });
+  const prev = el("button", { type: "button", class: "cal-nav", "aria-label": "Previous month", text: "\u2039" });
+  const next = el("button", { type: "button", class: "cal-nav", "aria-label": "Next month", text: "\u203a" });
+  const grid = el("div", { class: "cal-grid", role: "grid" });
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
+  const quick = (text, date) => {
+    const b = el("button", { type: "button", class: "cal-quick" + (date === value ? " on" : ""), text });
+    b.addEventListener("click", () => pick(date));
+    return b;
+  };
+  const card = el("div", { class: "cal", role: "dialog", "aria-label": "Pick a date" },
+    el("div", { class: "cal-head" }, title, el("div", { class: "cal-navs" }, prev, next)),
+    grid,
+    el("div", { class: "cal-foot" }, quick("Yesterday", iso(yest)), quick("Today", today)));
+  const wrap = el("div", { class: "cal-wrap" }, card);
+
+  function draw() {
+    const y = shown.getFullYear(), m = shown.getMonth();
+    title.textContent = shown.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+    next.disabled = `${y}-${pad(m + 1)}` >= today.slice(0, 7);
+    prev.disabled = y <= 2000 && m === 0;
+    const heads = ["S", "M", "T", "W", "T", "F", "S"].map((d) => el("span", { class: "cal-wd", text: d }));
+    const blanks = Array.from({ length: new Date(y, m, 1).getDay() }, () => el("span"));
+    const days = Array.from({ length: new Date(y, m + 1, 0).getDate() }, (_, i) => {
+      const date = iso(new Date(y, m, i + 1));
+      const b = el("button", { type: "button", class: "cal-day", text: String(i + 1), "aria-label": shortDate(date) });
+      if (date === today) b.classList.add("today");
+      if (date === value) { b.classList.add("on"); b.setAttribute("aria-pressed", "true"); }
+      if (date > today) b.disabled = true;
+      else b.addEventListener("click", () => pick(date));
+      return b;
+    });
+    grid.replaceChildren(...heads, ...blanks, ...days);
+  }
+  function pick(date) { close(); onPick(date); }
+  function close() { wrap.remove(); document.removeEventListener("keydown", onKey); }
+  function onKey(e) { if (e.key === "Escape") close(); }
+  prev.addEventListener("click", () => { shown = new Date(shown.getFullYear(), shown.getMonth() - 1, 1); draw(); });
+  next.addEventListener("click", () => { shown = new Date(shown.getFullYear(), shown.getMonth() + 1, 1); draw(); });
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
+  document.addEventListener("keydown", onKey);
+  draw();
+  document.body.append(wrap);
+
+  // Above the date if it fits (the entry bars sit at the bottom), otherwise below; always on screen.
+  const r = anchor.getBoundingClientRect();
+  const w = card.offsetWidth, h = card.offsetHeight, vw = document.documentElement.clientWidth;
+  card.style.left = `${Math.min(Math.max(16, r.left), vw - 16 - w)}px`;
+  card.style.top = `${r.top - h - 8 >= 8 ? r.top - h - 8 : Math.min(r.bottom + 8, window.innerHeight - h - 8)}px`;
+}
+
+// The date chip on the Material, WinUI and iOS bars: "Today" until you pick another day, so a missed
+// day can be filled in later. It stands out (class "past") while it is not today.
+function barDate() {
+  const lead = dateLead(todayStr());
+  lead.node.classList.add("bardate");
+  const label = lead.node.firstChild;
+  const mark = () => {
+    if (!lead.input.value) lead.value = todayStr();
+    const today = lead.value === todayStr();
+    if (today) label.textContent = "Today";
+    lead.node.classList.toggle("past", !today);
+  };
+  lead.input.addEventListener("change", () => { lead.value = lead.input.value || todayStr(); mark(); });
+  mark();
+  return lead;
+}
+// After adding to a month that may not be listed yet: list it (newest first) and show it.
+function showMonthOf(state, date) {
+  state.ym = date.slice(0, 7);
+  if (!state.months.includes(state.ym)) state.months = [...state.months, state.ym].sort().reverse();
 }
 
 function dayLead(value) {

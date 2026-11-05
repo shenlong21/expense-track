@@ -74,8 +74,9 @@ function amountSpot(line) {
 }
 const lineOf = (rec) => `${rec.name} - ${amountText(rec.amount_paise)}`;
 
-// The section an expense is written under: its first listed tag, or misc.
-const sectionKeyOf = (tags) => tags.find(isKnownTag) || MISC;
+// The section an expense is written under: its first listed tag; an untagged entry made by a
+// recurring payment goes under Recurring; anything else under misc.
+const sectionKeyOf = (it) => it.tags.find(isKnownTag) || (it.recurring && isKnownTag(RECURRING_TAG) ? RECURRING_TAG : MISC);
 const sectionOrder = (key) => (key === MISC ? TAGS.length : TAGS.findIndex(([n]) => n === key));
 const sectionColor = (key) => (key === MISC ? "#8a93a3" : tagColor(key));
 const sectionTitle = (key) => (key === MISC ? "Miscellaneous" : tagLabel(key));
@@ -116,7 +117,7 @@ async function loadNotebook() {
 function addItems(items, yms) {
   const touched = new Set();
   for (const it of [...items].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.id - b.id))) {
-    const section = ensureSection(ensureDay(it.date), sectionKeyOf(it.tags));
+    const section = ensureSection(ensureDay(it.date), sectionKeyOf(it));
     section.records.push(it);
     touched.add(section);
   }
@@ -133,6 +134,7 @@ function addItems(items, yms) {
     fit(s);
   }
   updateTotals();
+  drawGaps();
 }
 
 // Older months come in as you scroll down to them (the button is there too).
@@ -316,11 +318,44 @@ function gotoPage(date, key) {
   const page = ensureDay(date);
   const section = ensureSection(page, key);
   updateTotals();
+  drawGaps();
   const a = section.area;
   if (a.value && !a.value.endsWith("\n")) { a.value += "\n"; fit(section); }
   a.focus();
   a.setSelectionRange(a.value.length, a.value.length);
   page.node.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// ---------- days with nothing written ----------
+// A missed day has no page; between the pages around it there is an "Add 4 November" pill
+// (one per missed day, in order) that opens a blank page for it.
+const isoOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function drawGaps() {
+  for (const g of $("nb-page").querySelectorAll(".d-gap")) g.remove();
+  const dates = [...nb.pages.keys()].sort().reverse();
+  for (let i = 0; i + 1 < dates.length; i++) {
+    const [y, m, d] = dates[i + 1].split("-").map(Number);
+    for (let day = new Date(y, m - 1, d + 1); isoOf(day) < dates[i]; day.setDate(day.getDate() + 1)) {
+      const date = isoOf(day);
+      const month = ensureMonth(date.slice(0, 7));
+      const older = [...month.querySelectorAll(":scope > .d-page, :scope > .d-gap")].find((p) => p.dataset.date < date);
+      const pill = gapPill(date, day);
+      if (older) older.before(pill); else month.append(pill);
+    }
+  }
+}
+function gapPill(date, when) {
+  const btn = el("button", { type: "button", class: "d-gap", "data-date": date },
+    el("span", { class: "d-gapplus", "aria-hidden": "true", text: "+" }),
+    el("span", { text: `Add ${when.toLocaleDateString("en-IN", { day: "numeric", month: "long" })}` }));
+  btn.addEventListener("click", () => {
+    // The page opens blank; tap the section to write in, like any other day.
+    const page = ensureDay(date);
+    drawGaps();
+    updateTotals();
+    page.node.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  return btn;
 }
 
 // ---------- writing ----------

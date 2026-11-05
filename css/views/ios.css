@@ -82,3 +82,19 @@ body.ios .toast { background: var(--i-bar); color: var(--text); border-radius: 1
   backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8);
   box-shadow: 0 0 0 .5px var(--line), 0 8px 24px rgba(0,0,0,.16); }
 body.ios .toast button { color: var(--accent); font-weight: 600; filter: none; }
+
+/* the entry date: "Today", or the picked day in system blue */
+.i-barrow .bardate { flex: none; display: flex; align-items: center; height: 36px; padding: 0 12px; border-radius: 18px; background: var(--card);
+  box-shadow: inset 0 0 0 .5px var(--line); color: var(--muted); font-size: .9rem; white-space: nowrap; }
+.i-barrow .bardate.past { color: var(--accent); font-weight: 600; }
+/* calendar: iOS inline date picker - 13px corners, system blue, tinted circle for the pick */
+body.ios .cal { border-radius: 14px; box-shadow: 0 0 0 .5px var(--line), 0 10px 30px rgba(0,0,0,.18); }
+body.ios .cal-title { font-weight: 600; font-size: 1.02rem; }
+body.ios .cal-nav { font-size: 1.7rem; font-weight: 300; }
+body.ios .cal-wd { text-transform: uppercase; color: var(--muted); font-weight: 600; }
+body.ios .cal-day { font-size: 1.05rem; }
+body.ios .cal-day.today { box-shadow: none; color: var(--accent); font-weight: 600; }
+body.ios .cal-day.on { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-weight: 600; }
+body.ios .cal-quick { background: var(--i-fill); color: var(--accent); font-weight: 400; border-radius: 8px; }
+body.ios .cal-quick.on { background: var(--accent); color: #fff; }
+body.ios .cal-foot { border-top: .5px solid var(--line); }

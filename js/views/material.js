@@ -107,6 +107,7 @@ function materialBar() {
   });
   const fab = el("button", { type: "button", class: "m-fab", "aria-label": "Add expense", text: "+" });
   const picker = tagPicker();
+  const when = barDate();
   let saving = false;
   const add = async () => {
     if (saving) return;
@@ -114,12 +115,11 @@ function materialBar() {
     if (!parsed) { if (input.value.trim()) toast("Add an amount, like: chai 25"); return; }
     saving = true;
     try {
-      const rec = await api("POST", "/api/expenses", { name: parsed.name, amount: amountText(parsed.paise), date: todayStr(), tags: picker.value });
+      const rec = await api("POST", "/api/expenses", { name: parsed.name, amount: amountText(parsed.paise), date: when.value, tags: picker.value });
       savedToast(rec.tags);
     } catch (err) { saving = false; toast(err.message); return; }
     picker.reset();
-    mat.ym = currentYm();
-    if (!mat.months.includes(mat.ym)) mat.months.unshift(mat.ym);
+    showMonthOf(mat, when.value);
     saving = false;
     await drawMaterial();
     $("view-material").querySelector(".m-field").focus();
@@ -128,5 +128,5 @@ function materialBar() {
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } });
   fab.addEventListener("mousedown", (e) => e.preventDefault());   // keep the keyboard up
   fab.addEventListener("click", add);
-  return el("div", { class: "m-bar" }, picker.node, el("div", { class: "m-row" }, input, fab));
+  return el("div", { class: "m-bar" }, picker.node, el("div", { class: "m-row" }, when.node, input, fab));
 }

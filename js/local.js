@@ -141,6 +141,34 @@ async function generateRecurring(now) {
   return created;
 }
 
+const sameTags = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
+
+// A recurring item's new tag carries over to the entries it already made, unless an entry was
+// given a tag of its own since (its tags no longer match the item's old ones).
+async function retagLinked(rid, from, to) {
+  const t = await transaction(["expenses"], "readwrite");
+  const store = t.objectStore("expenses");
+  for (const e of await wrap(store.getAll())) {
+    if (e.rid === rid && sameTags(e.tags, from)) await wrap(store.put({ ...e, tags: to }));
+  }
+  await t.done;
+}
+
+// Once: entries made before their recurring item was retagged (e.g. to the new Recurring tag)
+// take the item's current tags, so they show up where the item says.
+async function syncRecurringTagsOnce() {
+  try { if (localStorage.getItem("recurringTagsSynced")) return; } catch { return; }
+  const t = await transaction(["recurring", "expenses"], "readwrite");
+  const items = new Map((await wrap(t.objectStore("recurring").getAll())).map((r) => [r.id, r]));
+  const store = t.objectStore("expenses");
+  for (const e of await wrap(store.getAll())) {
+    const r = e.rid != null && items.get(e.rid);
+    if (r && r.tags.length && !sameTags(e.tags, r.tags)) await wrap(store.put({ ...e, tags: r.tags }));
+  }
+  await t.done;
+  try { localStorage.setItem("recurringTagsSynced", "1"); } catch { /* storage blocked */ }
+}
+
 // ---------- the "server" ----------
 async function localApi(method, path, body) {
   const url = new URL(path, "http://local");
@@ -243,6 +271,7 @@ async function localApi(method, path, body) {
       const next = { ...old, name: c.name, paise: c.paise, day: c.day, note: c.note, tags: c.tags, active: c.active };
       await wrap(t.objectStore("recurring").put(next));
       await t.done;
+      if (!sameTags(old.tags, next.tags)) await retagLinked(id, old.tags, next.tags);
       await generateRecurring();
       return recurringOut(next);
     }
@@ -370,4 +399,5 @@ async function localReady() {
   // Ask the browser not to evict our data when the phone is low on space.
   try { await navigator.storage?.persist?.(); } catch { /* not supported */ }
   await generateRecurring();
+  await syncRecurringTagsOnce();
 }
